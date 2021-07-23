@@ -6,11 +6,13 @@
  * Xtase - fgalliat @Jul 2021
  */
 
+#define TI_MODEL_92_OR_V200 1
+
 // return true if init
 bool setup_tilink();
 
-// return true if successfully wrote
-bool ti_write(uint8_t b);
+// return < 0 if failed to write / 0 otherwise
+int ti_write(uint8_t b);
 
 // < 0 failure
 int ti_read();
