@@ -13,7 +13,7 @@ void setup() {
     Serial.begin(115200);
 
     bool setupOk = true;
-    bool tilinkOk = tilink.begin();
+    bool tilinkOk = tilink.begin(TI_TIP, TI_RING);
     if ( !tilinkOk ) {
         Serial.println("(!!) TiLink Setup failed");
         Serial.println("(!!) this is the main feature -> STOP");

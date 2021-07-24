@@ -10,3 +10,6 @@
 #include "lib_network.h"
 #include "lib_storage.h"
 #include "lib_tilink.h"
+
+#define TI_TIP 32
+#define TI_RING 33

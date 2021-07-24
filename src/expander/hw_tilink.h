@@ -16,7 +16,7 @@
 #define DEFAULT_POST_DELAY 100
 
 // return true if init
-bool setup_tilink();
+bool setup_tilink(int tip, int ring);
 
 // return < 0 if failed to write / 0 otherwise
 int ti_write(uint8_t b);

@@ -13,7 +13,7 @@ class TiLink : public Stream {
       TiLink();
       ~TiLink();
       
-      bool begin();
+      bool begin(int tip, int ring);
       void end();
 
       void poll(); // ...

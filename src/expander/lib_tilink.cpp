@@ -19,8 +19,8 @@ TiLink::TiLink() {
 TiLink::~TiLink() {
 }
 
-bool TiLink::begin() {
-  return setup_tilink();
+bool TiLink::begin(int tip, int ring) {
+  return setup_tilink(tip, ring);
 }
 
 void TiLink::end() {

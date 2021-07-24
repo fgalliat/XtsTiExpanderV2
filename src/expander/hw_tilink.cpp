@@ -10,10 +10,15 @@
 #include "hw_tilink.h"
 
 // ------ Wiring ------------
- //White 
-#define TIring -256
- //Red 
-#define TItip -255
+//  //White 
+// #define TIring -256
+//  //Red 
+// #define TItip -255
+
+//White
+int TIring = -1;
+//Red
+int TItip = -1;
 
 // ------ Hardware IDs -------
 #if TI_MODEL_92_OR_V200
@@ -29,7 +34,9 @@
 // ------ Forward symbols -----
 void __resetTILines(bool reboot=false);
 
-bool setup_tilink() {
+bool setup_tilink(int tip, int ring) {
+    TIring = ring;
+    TItip = tip;
     if ( TIring <= 0 || TItip <= 0 ) {
         Serial.println("/!\\ TIring ot TItip not setted");
         return false;
