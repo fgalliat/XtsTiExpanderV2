@@ -6,6 +6,8 @@
  * Xtase - fgalliat @Jul 2021
  */
 
+#define INPUT_BUFF_LEN 128
+
 class TiLink : public Stream {
     public:
       TiLink();

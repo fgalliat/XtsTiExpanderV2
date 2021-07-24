@@ -20,5 +20,9 @@ void setup() {
 }
 
 void loop() {
+    tilink.poll();
 
+    if ( tilink.available() ) {
+        Serial.write( tilink.read() );
+    }
 }

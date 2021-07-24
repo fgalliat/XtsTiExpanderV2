@@ -8,6 +8,13 @@
 
 #define TI_MODEL_92_OR_V200 1
 
+// ------ Timeouts ------------
+#define TIMEOUT 300
+#define GET_ENTER_TIMEOUT 1000
+#define ERR_READ_TIMEOUT 300
+
+#define DEFAULT_POST_DELAY 100
+
 // return true if init
 bool setup_tilink();
 
@@ -15,7 +22,7 @@ bool setup_tilink();
 int ti_write(uint8_t b);
 
 // < 0 failure
-int ti_read();
+int ti_read(long timeout=GET_ENTER_TIMEOUT);
 
 // return written bytes nb
 int ti_write(uint8_t* seg, int segLen);

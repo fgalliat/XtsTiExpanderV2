@@ -26,13 +26,6 @@
   #error "No TI model selected";
 #endif
 
-// ------ Timeouts ------------
-#define TIMEOUT 300
-#define GET_ENTER_TIMEOUT 1000
-#define ERR_READ_TIMEOUT 300
-
-#define DEFAULT_POST_DELAY 100
-
 // ------ Forward symbols -----
 void __resetTILines(bool reboot=false);
 
@@ -115,14 +108,27 @@ int ti_write(uint8_t b) {
     return 0;
 }
 
-int ti_read() {
+// default : GET_ENTER_TIMEOUT
+int ti_read(long timeout) {
     long previousMillis = 0;
     int bit;
     uint8_t v, byteout = 0;
     for (bit = 0; bit < 8; bit++) {
       previousMillis = 0;
+      /**
+       * 
+       * //Interrupt Modes
+        #define RISING    0x01
+        #define FALLING   0x02
+        #define CHANGE    0x03 <--
+        #define ONLOW     0x04
+        #define ONHIGH    0x05
+        #define ONLOW_WE  0x0C
+        #define ONHIGH_WE 0x0D
+       * 
+       */
       while ((v = (digitalRead(TIring) << 1 | digitalRead(TItip))) == 0x03) {
-        if (previousMillis++ > GET_ENTER_TIMEOUT) {
+        if (previousMillis++ > timeout) {
             // return ERR_READ_TIMEOUT + j + 100 * bit;
             return -1;
         }
