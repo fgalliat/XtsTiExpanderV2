@@ -20,7 +20,7 @@ booter="bootloader_dio_80m.bin"
 if [ -e /vm_mnt/opt/devl/Arduino ] ; then
  # WSL INSTALL
  # COM11 windows -> auto mapped w/ WSL
-comPort="/dev/ttyS11"
+comPort="/dev/ttyS3"
 else 
 # 'nux
 comPort="/dev/ttyUSB0"

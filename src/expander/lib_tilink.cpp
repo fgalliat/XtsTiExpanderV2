@@ -10,7 +10,7 @@
 #include "globals.h"
 #include "hw_tilink.h"
 
-uint8_t inputBuff[INPUT_BUFF_LEN];
+uint8_t inputBuff[INPUT_BUFF_LEN+1];
 int inputBuffCursor = 0;
 
 TiLink::TiLink() {
@@ -27,6 +27,7 @@ void TiLink::end() {
 }
 
 void pushToBuffer(uint8_t b) {
+  Serial.print('>');Serial.print(b, HEX);Serial.println('<');
   inputBuff[ inputBuffCursor++ ] = b;
 }
 
@@ -34,8 +35,13 @@ int consumeBuffer() {
   if ( inputBuffCursor == 0 ) {
     return -1;
   }
-  int bte = inputBuff[inputBuffCursor];
+  // int bte = inputBuff[inputBuffCursor-1];
+  int bte = (int)inputBuff[0];
+  for(int i=0; i < inputBuffCursor; i++) {
+    inputBuff[i] = inputBuff[i+1];
+  }
   inputBuff[inputBuffCursor] = 0x00;
+  //inputBuff[inputBuffCursor-1] = 0x00;
   inputBuffCursor--;
   return bte;
 }

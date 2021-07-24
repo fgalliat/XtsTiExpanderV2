@@ -13,3 +13,5 @@
 
 #define TI_TIP 32
 #define TI_RING 33
+// #define TI_TIP 33
+// #define TI_RING 32

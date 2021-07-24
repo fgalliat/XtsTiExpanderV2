@@ -32,6 +32,7 @@ void loop() {
     tilink.poll();
 
     if ( tilink.available() ) {
-        Serial.write( tilink.read() );
+        Serial.print( tilink.read(), HEX );
+        Serial.write( ' ' );
     }
 }

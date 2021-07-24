@@ -122,18 +122,7 @@ int ti_read(long timeout) {
     uint8_t v, byteout = 0;
     for (bit = 0; bit < 8; bit++) {
       previousMillis = 0;
-      /**
-       * 
-       * //Interrupt Modes
-        #define RISING    0x01
-        #define FALLING   0x02
-        #define CHANGE    0x03 <--
-        #define ONLOW     0x04
-        #define ONHIGH    0x05
-        #define ONLOW_WE  0x0C
-        #define ONHIGH_WE 0x0D
-       * 
-       */
+
       while ((v = (digitalRead(TIring) << 1 | digitalRead(TItip))) == 0x03) {
         if (previousMillis++ > timeout) {
             // return ERR_READ_TIMEOUT + j + 100 * bit;
@@ -141,6 +130,7 @@ int ti_read(long timeout) {
         }
       }
       if (v == 0x01) {
+        Serial.write('1');
         byteout = (byteout >> 1) | 0x80;
         pinMode(TItip, OUTPUT);
         digitalWrite(TItip, LOW);     //should already be set because of the pullup resistor register
@@ -154,6 +144,7 @@ int ti_read(long timeout) {
         //pinMode(TIring,OUTPUT);
         digitalWrite(TIring, HIGH);
       } else {
+        Serial.write('0');
         byteout = (byteout >> 1) & 0x7F;
         pinMode(TIring, OUTPUT);
         digitalWrite(TIring, LOW);     //should already be set because of the pullup resistor register
@@ -172,7 +163,7 @@ int ti_read(long timeout) {
       pinMode(TItip, INPUT);            // set pin to input
       digitalWrite(TItip, HIGH);        // turn on pullup resistors
     }
-    return byteout;
+    return (int)byteout;
 }
 
 int ti_write(uint8_t* seg, int segLen) {
