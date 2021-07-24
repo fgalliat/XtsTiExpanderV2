@@ -26,6 +26,10 @@ bool TiLink::begin(int tip, int ring) {
 void TiLink::end() {
 }
 
+void TiLink::resetLines() {
+  __resetTILines(false);
+}
+
 void pushToBuffer(uint8_t b) {
   Serial.print('>');Serial.print(b, HEX);Serial.println('<');
   inputBuff[ inputBuffCursor++ ] = b;
@@ -79,5 +83,9 @@ void TiLink::flush() {
 }
 
 size_t TiLink::write(uint8_t c) {
-  return ti_write(c);
+  int result = ti_write(c);
+  if ( result < 0 ) {
+    Serial.println("WRITEFAIL");
+  }
+  return result >= 0 ? 1 : 0;
 }

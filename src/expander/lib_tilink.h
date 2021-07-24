@@ -16,6 +16,8 @@ class TiLink : public Stream {
       bool begin(int tip, int ring);
       void end();
 
+      void resetLines();
+
       void poll(); // ...
 
       // - Stream extension - 

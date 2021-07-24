@@ -18,6 +18,8 @@
 // return true if init
 bool setup_tilink(int tip, int ring);
 
+void __resetTILines(bool reboot);
+
 // return < 0 if failed to write / 0 otherwise
 int ti_write(uint8_t b);
 
@@ -25,7 +27,7 @@ int ti_write(uint8_t b);
 int ti_read(long timeout=GET_ENTER_TIMEOUT);
 
 // return written bytes nb
-int ti_write(uint8_t* seg, int segLen);
+int ti_writes(uint8_t* seg, int segLen);
 // return read bytes nb
 int ti_recv(uint8_t* seg, int segMaxLen);
 

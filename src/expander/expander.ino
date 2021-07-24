@@ -35,4 +35,11 @@ void loop() {
         Serial.print( tilink.read(), HEX );
         Serial.write( ' ' );
     }
+
+    if ( Serial.available() ) {
+        Serial.read();
+        tilink.resetLines();
+        tilink.write('A');
+    }
+
 }
