@@ -6,25 +6,21 @@
  * Xtase - fgalliat @Jul 2021
  */
 
-#define TI_MODEL_92_OR_V200 1
+class TiLink : public Stream {
+    public:
+      TiLink();
+      ~TiLink();
+      
+      bool begin();
+      void end();
 
-// return true if init
-bool setup_tilink();
+      void poll(); // ...
 
-// return < 0 if failed to write / 0 otherwise
-int ti_write(uint8_t b);
+      // - Stream extension - 
+      int available();
+      int read();
+      int peek();
+      void flush();
+      size_t write(uint8_t c);
 
-// < 0 failure
-int ti_read();
-
-// return written bytes nb
-int ti_write(uint8_t* seg, int segLen);
-// return read bytes nb
-int ti_recv(uint8_t* seg, int segMaxLen);
-
-bool ti_sendVar(Stream* input);
-bool ti_reqScreen(Stream* output);
-
-// call in loop() -> can recvVar, recvCBL, ....
-// return true if something happend
-bool ti_handle();
+};

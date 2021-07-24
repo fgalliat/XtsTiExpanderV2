@@ -7,10 +7,12 @@
 #define MAIN_CODE 1
 #include "globals.h"
 
+TiLink tilink;
+
 void setup() {
     Serial.begin(115200);
 
-    bool setupOk = setup_tilink();
+    bool setupOk = tilink.begin();
 
     if ( !setupOk ) {
         Serial.println("(!!) Setup may be incomplete");
