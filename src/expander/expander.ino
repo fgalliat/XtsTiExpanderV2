@@ -32,14 +32,21 @@ void loop() {
     tilink.poll();
 
     if ( tilink.available() ) {
-        Serial.print( tilink.read(), HEX );
-        Serial.write( ' ' );
+        int b = tilink.read();
+        if ( b < ' ' || b > 128 ) {
+            Serial.write( 'x' );
+            Serial.print( b, HEX );
+            Serial.write( ' ' );
+        } else {
+            Serial.write( b );
+        }
+        tilink.resetLines();
     }
 
     if ( Serial.available() ) {
-        Serial.read();
+        int b = Serial.read();
         tilink.resetLines();
-        tilink.write('A');
+        tilink.write(b);
     }
 
 }

@@ -31,7 +31,7 @@ void TiLink::resetLines() {
 }
 
 void pushToBuffer(uint8_t b) {
-  Serial.print('>');Serial.print(b, HEX);Serial.println('<');
+  // Serial.print('>');Serial.print(b, HEX);Serial.println('<');
   inputBuff[ inputBuffCursor++ ] = b;
 }
 
