@@ -33,6 +33,27 @@ int TItip = -1;
   #error "No TI model selected";
 #endif
 
+// ===================== RAM Settings ==================
+// max alowed to store big packets
+// based on Arduino UNO available RAM size - but is really enough
+#define MAX_ARDUINO_MEM_SIZE 870
+
+// 3840 bytes for a TI-92 => too HUDGE to fit in RAM
+#define MAX_TI_SCR_SIZE ( TI_SCREEN_HEIGHT*(TI_SCREEN_WIDTH/8) )
+
+// to have complete scanlines
+#define nbScanlines ( MAX_ARDUINO_MEM_SIZE / (TI_SCREEN_WIDTH/8) )
+
+#define SCREEN_SEG_MEM ( nbScanlines * (TI_SCREEN_WIDTH/8) )
+
+// ===================== RAM Settings ==================
+
+// big data purpose RAM seg
+uint8_t screen[SCREEN_SEG_MEM];
+// generic purpose RAM seg
+uint8_t recv[16];
+uint8_t data[4] = { PC_2_TI, REQ_SCREENSHOT, 0x00, 0x00 };
+
 // ------ Forward symbols -----
 void __resetTILines(bool reboot=false);
 
@@ -69,15 +90,11 @@ void resetLines(void) {
 }
 
 // impl. based on ArTiCl code
-
 int ti_write(uint8_t b) {
-  uint8_t byte = b;
+	lockISR(); // will auto release
+	uint8_t byte = b;
 
-  unsigned long previousMicros;
-	// if (serial_) {
-	// 	serial_.print("Sending byte ");
-	// 	serial_.println(byte);
-	// }
+  	unsigned long previousMicros;
 
 	// Send all of the bits in this byte
 	for(int bit = 0; bit < 8; bit++) {
@@ -126,6 +143,7 @@ int ti_write(uint8_t b) {
 }
 
 // default : GET_ENTER_TIMEOUT
+// impl. based on ArTiCl code
 int ti_read(long enterTimeout, long nextTimeout) {
 	lockISR(); // prevent from take long more time than ISR frequency
 
@@ -209,3 +227,60 @@ int ti_recv(uint8_t* seg, int segMaxLen) {
     return segMaxLen;
 }
 
+bool ti_reqScreen(Stream* output, bool ascii) {
+  // lockISR(); // not for now
+
+  int recvNb = -1;
+  resetLines();
+  
+  data[1] = REQ_SCREENSHOT;
+  ti_write(data, 4);
+  delay(50);
+
+  resetLines();
+  delay(100);
+  recvNb = ti_recv(recv, 4); // => calculator's ACK
+  resetLines();
+  recvNb = ti_recv(recv, 4); // ? 89 15 00 0F ? <TI92> <?> <LL> <HH> => 00 0F => 0F 00 = 3840 screen mem size
+  if ( recvNb != 4 ) {
+    serial_.println(F("E:TI did not ACK'ed, abort"));
+    return false;
+  }
+  
+  if ( !ascii ) {
+    output->write( (uint8_t)(MAX_TI_SCR_SIZE >> 8) );
+    output->write( (uint8_t)(MAX_TI_SCR_SIZE % 256) );
+  }
+
+  // Dumping screen raster
+  for(int j=0; j < MAX_TI_SCR_SIZE; j+=SCREEN_SEG_MEM) {
+    int howMany = (j+SCREEN_SEG_MEM) < MAX_TI_SCR_SIZE ? SCREEN_SEG_MEM : SCREEN_SEG_MEM - ( (j+SCREEN_SEG_MEM) % MAX_TI_SCR_SIZE );
+
+    ti_recv(screen, howMany);
+    //dispScreenMem(howMany, ascii);
+	if ( !ascii ) {
+		output->write( screen, howMany );
+	} else {
+		for (int i = 0; i < howMany; i++) {
+			for (int j = 7; j >= 0; j--) {
+				if (screen[i] & (1 << j)) {
+					output->write('#');
+				} else {
+					output->write('.');
+				}
+			}
+			if (i % (TI_SCREEN_WIDTH/8) == (TI_SCREEN_WIDTH/8)-1) { // 240/8 => 30 bytes
+				output->println();
+			}
+		}
+	}
+  }
+
+  recvNb = ti_recv(recv, 2); // checksum from TI
+  //Serial.println(recvNb);
+  
+  data[1] = REP_OK;
+  ti_write(data, 4); // Arduino's ACK
+  // delay(50);
+  return true;
+}

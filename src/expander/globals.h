@@ -7,6 +7,9 @@
 #if MAIN_CODE
 #endif
 
+// because requires ~16ms max to read a byte from TI
+#define ISR_DURATION 20
+
 #include "lib_network.h"
 #include "lib_storage.h"
 #include "lib_tilink.h"

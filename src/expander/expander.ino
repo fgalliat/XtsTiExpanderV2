@@ -33,7 +33,11 @@ void IRAM_ATTR onTimer() {
 }
 
 void lockISR() {
+    if ( ISRLOCKED ) {
+        return;
+    }
     ISRLOCKED = true;
+    delay(ISR_DURATION); // ensure exit from ISR
 }
 
 void installISR(int msec) {
@@ -66,7 +70,7 @@ void setup() {
         Serial.println("(!!) Setup may be incomplete");
     }
 
-    installISR(20); // need 16ms to read a byte
+    installISR(ISR_DURATION); // need 16ms to read a byte
 }
 
 void loop() {
@@ -86,7 +90,10 @@ void loop() {
 
     if ( Serial.available() ) {
         int b = Serial.read();
-        tilink.resetLines();
+        if ( b == 0x03 ) {
+            // Ctrl-C
+            tilink.requestScreen(&Serial, true);
+        }
         tilink.write(b);
     }
 

@@ -18,6 +18,8 @@ class TiLink : public Stream {
 
       void resetLines();
 
+      bool requestScreen(Stream* out, bool asciiMode = false); 
+
       void poll(bool isrMode=false); // ...
 
       // - Stream extension - 

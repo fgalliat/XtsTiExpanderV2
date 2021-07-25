@@ -85,3 +85,8 @@ size_t TiLink::write(uint8_t c) {
   }
   return result >= 0 ? 1 : 0;
 }
+
+
+bool TiLink::requestScreen(Stream* out, bool asciiMode) {
+  return ti_reqScreen(out, asciiMode);
+}
