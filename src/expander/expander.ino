@@ -9,6 +9,45 @@
 
 TiLink tilink;
 
+// ================================================
+// Specific ESP32 Timer
+volatile bool ISRLOCKED = false;
+hw_timer_t * timer = NULL;
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+
+// volatile int interruptCounter;
+
+void IRAM_ATTR onTimer() {
+  portENTER_CRITICAL_ISR(&timerMux);
+
+  if ( !ISRLOCKED ) { 
+    // interruptCounter++;
+    
+    // if takes long more than ISR frequency -> Exception
+    // (Guru Meditation Error: Core  1 panic'ed (Interrupt wdt timeout on CPU1)
+    tilink.poll(true);
+    ISRLOCKED = false;
+  }
+
+  portEXIT_CRITICAL_ISR(&timerMux);
+}
+
+void lockISR() {
+    ISRLOCKED = true;
+}
+
+void installISR(int msec) {
+    // ------------------------------
+    // Specific ESP32 Timer
+    timer = timerBegin(0, 80, true);
+    timerAttachInterrupt(timer, &onTimer, true);
+    timerAlarmWrite(timer, msec * 1000, true);
+    timerAlarmEnable(timer);
+    // ------------------------------
+    ISRLOCKED = false;
+}
+// ================================================
+
 void setup() {
     Serial.begin(115200);
 
@@ -26,10 +65,12 @@ void setup() {
     if ( !setupOk ) {
         Serial.println("(!!) Setup may be incomplete");
     }
+
+    installISR(20); // need 16ms to read a byte
 }
 
 void loop() {
-    tilink.poll();
+    // tilink.poll();
 
     if ( tilink.available() ) {
         int b = tilink.read();

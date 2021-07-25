@@ -18,7 +18,7 @@ class TiLink : public Stream {
 
       void resetLines();
 
-      void poll(); // ...
+      void poll(bool isrMode=false); // ...
 
       // - Stream extension - 
       int available();

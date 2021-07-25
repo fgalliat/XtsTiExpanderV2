@@ -24,10 +24,10 @@ void __resetTILines(bool reboot);
 int ti_write(uint8_t b);
 
 // < 0 failure
-int ti_read(long timeout=GET_ENTER_TIMEOUT);
+int ti_read(long enterTimeout=GET_ENTER_TIMEOUT, long nextTimeout=GET_ENTER_TIMEOUT);
 
 // return written bytes nb
-int ti_writes(uint8_t* seg, int segLen);
+int ti_write(uint8_t* seg, int segLen);
 // return read bytes nb
 int ti_recv(uint8_t* seg, int segMaxLen);
 

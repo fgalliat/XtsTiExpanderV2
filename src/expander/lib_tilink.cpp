@@ -50,16 +50,12 @@ int consumeBuffer() {
   return bte;
 }
 
-void TiLink::poll() {
-  // FIXME : poll() :> incoming bytes to a queue
-  // then available() gives queue size
-  // read() consumes the queue
-  // peek() returns top of queue
+void TiLink::poll(bool isrMode) {
   if ( inputBuffCursor >= INPUT_BUFF_LEN ) {
     return;
   }
 
-  int result = ti_read(5); // 5msec waiting each time
+  int result = ti_read(2,2);
   if ( result < 0 ) {
     return;
   }

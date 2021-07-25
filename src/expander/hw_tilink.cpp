@@ -9,6 +9,8 @@
 #include <Arduino.h>
 #include "hw_tilink.h"
 
+extern void lockISR();
+
 // ------ Wiring ------------
 //  //White 
 // #define TIring -256
@@ -48,32 +50,27 @@ bool setup_tilink(int tip, int ring) {
 }
 
 void __resetTILines(bool reboot) {
-  // pinMode(TIring, INPUT);           // set pin to input
-  // pinMode(TItip, INPUT);            // set pin to input
+  pinMode(TIring, INPUT_PULLUP);
+  pinMode(TItip, INPUT_PULLUP);
   // if (reboot) {
   //   digitalWrite(TIring, LOW);       // for reset purposes
   //   digitalWrite(TItip, LOW);        // for reset purposes
   // }
   // digitalWrite(TIring, HIGH);       // turn on pullup resistors
   // digitalWrite(TItip, HIGH);        // turn on pullup resistors
-  pinMode(TIring, INPUT_PULLUP);
-  pinMode(TItip, INPUT_PULLUP);
 }
 
 #define serial_ Serial
 #define ERR_WRITE_TIMEOUT -1
+#define ERR_READ_ENTER_TIMEOUT -1
 
 void resetLines(void) {
-	// pinMode(ring_, INPUT_PULLUP);           // set pin to input with pullups
-	// pinMode(tip_, INPUT_PULLUP);            // set pin to input with pullups
   __resetTILines(false);
 }
 
 // impl. based on ArTiCl code
 
 int ti_write(uint8_t b) {
-  int ring_ = TIring;
-  int tip_ = TItip;
   uint8_t byte = b;
 
   unsigned long previousMicros;
@@ -87,7 +84,7 @@ int ti_write(uint8_t b) {
 		
 		// Wait for both lines to be high before sending the bit
 		previousMicros = micros();
-		while (digitalRead(ring_) == LOW || digitalRead(tip_) == LOW) {
+		while (digitalRead(TIring) == LOW || digitalRead(TItip) == LOW) {
 			if (micros() - previousMicros > TIMEOUT) {
 				resetLines();
 				return ERR_WRITE_TIMEOUT;
@@ -96,12 +93,12 @@ int ti_write(uint8_t b) {
 		
 		// Pull one line low to indicate a new bit is going out
 		bool bitval = (byte & 1);
-		int line = (bitval)?ring_:tip_;
+		int line = (bitval)?TIring:TItip;
 		pinMode(line, OUTPUT);
 		digitalWrite(line, LOW);
 		
 		// Wait for peer to acknowledge by pulling opposite line low
-		line = (bitval)?tip_:ring_;
+		line = (bitval)?TItip:TIring;
 		previousMicros = micros();
 		while (digitalRead(line) == HIGH) {
 			if (micros() - previousMicros > TIMEOUT) {
@@ -126,28 +123,24 @@ int ti_write(uint8_t b) {
 	}
 
 	return 0;
-
 }
 
-#define ERR_READ_ENTER_TIMEOUT -1
-
 // default : GET_ENTER_TIMEOUT
-int ti_read(long timeout) {
-int ring_ = TIring;
-  int tip_ = TItip;
+int ti_read(long enterTimeout, long nextTimeout) {
+	lockISR(); // prevent from take long more time than ISR frequency
 
-  timeout *= 1000; // uS to mS
+  	long timeout = enterTimeout * 1000; // mS to uS
 
-unsigned long previousMicros = 0;
+	unsigned long previousMicros = 0;
 	// *byte = 0;
-  int byte = 0;
+  	int byte = 0;
 	
 	// Pull down each bit and store it
 	for (int bit = 0; bit < 8; bit++) {
 		int linevals;
 
 		previousMicros = micros();
-		while ((linevals = ((digitalRead(ring_) << 1) | digitalRead(tip_))) == 0x03) {
+		while ((linevals = ((digitalRead(TIring) << 1) | digitalRead(TItip))) == 0x03) {
 			if (micros() - previousMicros > timeout) {
 				resetLines();
 				if (serial_ && bit > 0) {
@@ -156,19 +149,18 @@ unsigned long previousMicros = 0;
 				return ERR_READ_ENTER_TIMEOUT;
 			}
 		}
-    // tmp : fix
-    timeout = 300 * 1000; // after bit 0
+		timeout = nextTimeout * 1000; // after bit 0
 		
 		// Store the bit, then acknowledge it
 		//*byte = (*byte >> 1) | ((linevals == 0x01)?0x80:0x00);
-    byte = (byte >> 1) | ((linevals == 0x01)?0x80:0x00);
+    	byte = (byte >> 1) | ((linevals == 0x01)?0x80:0x00);
 
-		int line = (linevals == 0x01)?tip_:ring_;
+		int line = (linevals == 0x01)?TItip:TIring;
 		pinMode(line, OUTPUT);
 		digitalWrite(line, LOW);
 		
 		// Wait for the peer to indicate readiness
-		line = (linevals == 0x01)?ring_:tip_;		
+		line = (linevals == 0x01)?TIring:TItip;		
 		previousMicros = micros();
 		while (digitalRead(line) == LOW) {            //wait for the other one to go high again
 			if (micros() - previousMicros > TIMEOUT) {
@@ -186,13 +178,13 @@ unsigned long previousMicros = 0;
 	// if (serial_) {
 	// 	serial_.print("Got byte ");
 	// 	// serial_.println(*byte);
-  //   serial_.println(byte);
+    //   serial_.println(byte);
 	// }
 	// return 0;
   return (int)byte;
 }
 
-int ti_writes(uint8_t* seg, int segLen) {
+int ti_write(uint8_t* seg, int segLen) {
     int result;
     for(int i=0; i < segLen; i++) {
         result = ti_write(seg[i]);
