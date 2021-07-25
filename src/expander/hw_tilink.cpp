@@ -301,3 +301,9 @@ int ti_sendKeyStroke(int data) {
   delay(DEFAULT_POST_DELAY/2);
   return 0;
 }
+
+// ============================================
+
+bool ti_handle() {
+	return false;
+}

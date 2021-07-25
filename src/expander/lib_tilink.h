@@ -22,6 +22,8 @@ class TiLink : public Stream {
       int sendKeyStrokes(char* data, int len=-1);
       int sendKeyStroke(int data);
 
+      bool handleCalc();
+
       void poll(bool isrMode=false); // ...
 
       // - Stream extension - 

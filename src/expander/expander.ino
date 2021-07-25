@@ -26,8 +26,8 @@ void IRAM_ATTR onTimer() {
     // if takes long more than ISR frequency -> Exception
     // (Guru Meditation Error: Core  1 panic'ed (Interrupt wdt timeout on CPU1)
     tilink.poll(true);
-    ISRLOCKED = false;
   }
+  ISRLOCKED = false; // auto release
 
   portEXIT_CRITICAL_ISR(&timerMux);
 }
@@ -76,17 +76,18 @@ void setup() {
 void loop() {
     // tilink.poll();
 
-    if ( tilink.available() ) {
-        int b = tilink.read();
-        if ( b < ' ' || b > 128 ) {
-            Serial.write( 'x' );
-            Serial.print( b, HEX );
-            Serial.write( ' ' );
-        } else {
-            Serial.write( b );
-        }
-        tilink.resetLines();
-    }
+    // if ( tilink.available() ) {
+    //     int b = tilink.read();
+    //     if ( b < ' ' || b > 128 ) {
+    //         Serial.write( 'x' );
+    //         Serial.print( b, HEX );
+    //         Serial.write( ' ' );
+    //     } else {
+    //         Serial.write( b );
+    //     }
+    //     tilink.resetLines();
+    // }
+    tilink.handleCalc();
 
     if ( Serial.available() ) {
         int b = Serial.read();

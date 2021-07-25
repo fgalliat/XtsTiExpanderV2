@@ -11,8 +11,8 @@
  - [ ] install minimal TI protocol
    - [x] requestScreen (try 1st w/ ISR mode -> seems to work)
    - [x] send KeyStrokes
-   - [ ] sendVar
-   - [ ] readAsCBL
-   - [ ] receiveVar
+   - [ ] sendVar -> Ti
+   - [~] readAsCBL <- Ti
+   - [ ] receiveVar <- Ti
 
    /!\\ (recvNb == 0) -> no more : (recvNb == nbSent)
