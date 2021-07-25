@@ -284,3 +284,20 @@ bool ti_reqScreen(Stream* output, bool ascii) {
   // delay(50);
   return true;
 }
+
+
+int ti_sendKeyStrokes(char* data, int len) {
+  if ( len < 0 ) { len = strlen(data); } 
+  for(int i=0; i < len; i++) { ti_sendKeyStroke( (int)data[i] ); }
+  return 0;
+}
+
+int ti_sendKeyStroke(int data) {
+  // http://merthsoft.com/linkguide/ti92/remote.html
+  uint8_t D[4] = { PC_2_TI, CMD_REMOTE, (uint8_t)(data%256), (uint8_t)(data/256) };
+  ti_write(D, 4);
+  delay(DEFAULT_POST_DELAY/2);
+  ti_recv(D, 4); if ( D[1] != REP_OK ) { serial_.print("E:failed to read ACK ->"); serial_.println(D[1], HEX); return -1; }
+  delay(DEFAULT_POST_DELAY/2);
+  return 0;
+}

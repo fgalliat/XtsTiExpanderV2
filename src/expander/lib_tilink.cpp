@@ -90,3 +90,6 @@ size_t TiLink::write(uint8_t c) {
 bool TiLink::requestScreen(Stream* out, bool asciiMode) {
   return ti_reqScreen(out, asciiMode);
 }
+
+int TiLink::sendKeyStrokes(char* data, int len) { return ti_sendKeyStrokes(data, len); }
+int TiLink::sendKeyStroke(int keyCode) { return ti_sendKeyStroke(keyCode); }

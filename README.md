@@ -10,6 +10,7 @@
    - [x] Raw
  - [ ] install minimal TI protocol
    - [x] requestScreen (try 1st w/ ISR mode -> seems to work)
+   - [x] send KeyStrokes
    - [ ] sendVar
    - [ ] readAsCBL
    - [ ] receiveVar

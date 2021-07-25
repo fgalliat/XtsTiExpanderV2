@@ -40,6 +40,10 @@ int ti_recv(uint8_t* seg, int segMaxLen);
 bool ti_sendVar(Stream* input);
 bool ti_reqScreen(Stream* output, bool ascii);
 
+int ti_sendKeyStrokes(char* data, int len=-1);
+int ti_sendKeyStroke(int data);
+
+
 // call in loop() -> can recvVar, recvCBL, ....
 // return true if something happend
 bool ti_handle();

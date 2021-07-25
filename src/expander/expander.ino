@@ -90,9 +90,11 @@ void loop() {
 
     if ( Serial.available() ) {
         int b = Serial.read();
-        if ( b == 0x03 ) {
-            // Ctrl-C
+        if ( b == 0x03 ) { // Ctrl-C
             tilink.requestScreen(&Serial, true);
+        } else if ( b == 0x04 ) { // Ctrl-D
+            tilink.sendKeyStroke( KEYCODE_CLEAR );
+            tilink.sendKeyStrokes( "Hello world !" );
         }
         tilink.write(b);
     }

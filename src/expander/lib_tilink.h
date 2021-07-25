@@ -19,6 +19,8 @@ class TiLink : public Stream {
       void resetLines();
 
       bool requestScreen(Stream* out, bool asciiMode = false); 
+      int sendKeyStrokes(char* data, int len=-1);
+      int sendKeyStroke(int data);
 
       void poll(bool isrMode=false); // ...
 
