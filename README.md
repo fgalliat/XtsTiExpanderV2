@@ -5,7 +5,7 @@
  
  - [x] connect & send/receive bytes to Ti Voyage 200
  - [~] SerialTerm to V200
-   - [ ] Dummy mode
+   - [~] Dummy mode
    - [~] CBL Keyb mode
    - [x] Raw
  - [ ] install minimal TI protocol
@@ -13,6 +13,8 @@
    - [x] send KeyStrokes
    - [ ] sendVar -> Ti
    - [~] readAsCBL <- Ti
-   - [~] receiveVar <- Ti
+   - [x] receiveVar <- Ti
+ - [ ] install hiLevel protocol
+   - [ ] actionVar receive ..
 
    /!\\ (recvNb == 0) -> no more : (recvNb == nbSent)

@@ -9,6 +9,8 @@
 #define INPUT_BUFF_LEN 128
 
 class TiLink : public Stream {
+    private:
+      void dummyMode();
     public:
       TiLink();
       ~TiLink();
