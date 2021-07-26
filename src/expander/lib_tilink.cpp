@@ -10,6 +10,10 @@
 #include "globals.h"
 #include "hw_tilink.h"
 
+extern bool isPollMode();
+extern void setPollMode(bool state);
+
+
 uint8_t inputBuff[INPUT_BUFF_LEN+1];
 int inputBuffCursor = 0;
 
@@ -67,7 +71,10 @@ int TiLink::available() {
   return inputBuffCursor;
 }
 int TiLink::read() {
-  // return ti_read();
+  if ( !isPollMode() ) {
+    return ti_read();
+  }
+
   return consumeBuffer();
 }
 
@@ -99,6 +106,7 @@ extern uint8_t screen[];
 #define TMP_RAM screen
 
 void dummyMode() {
+  // FIXME : impl.
   Serial.println("You are in dummy mode");
 }
 
@@ -127,9 +135,29 @@ void CBL_CTS() {
 
 void debugDatas(uint8_t* data, int len) {
   for (int i=0; i < len; i++) {
-    Serial.print( data[i], HEX ); Serial.print( F(" ") );
+    uint8_t b = data[i];
+    if ( b < 16 ) { Serial.write('0'); }
+    Serial.print( b, HEX ); 
+    if ( b < 32 || b > 128 ) { Serial.write( '?' ); }
+    else { Serial.write(b); }
+    Serial.write( ' ' );
   }
   Serial.println();
+}
+
+bool TiLink::waitAvailable(long timeout) {
+  if ( !isPollMode() ) {
+    return true; // beware with that
+  }
+
+  long curTime = millis();
+  while( available() <= 0 ) {
+    delay(30);
+    if ( millis() - curTime > timeout ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool TiLink::handleCalc() {
@@ -137,7 +165,7 @@ bool TiLink::handleCalc() {
 
   int recvNb;
 
-  Serial.println(available());
+  // Serial.println(available());
 
   // FIXME : better -- Cf further read() single byte
   if ( available() < 2 ) { return false; }
@@ -147,6 +175,7 @@ bool TiLink::handleCalc() {
 
     // ASM version PRGM starts - direct bytes
     if ( recvNb == 2 && recv[0] == 'X' && recv[1] == ':' ) {
+      waitAvailable(200);
       recvNb = readBytes(recv, 7);
       if ( recvNb == 7 && recv[0] == '?' && recv[1] == 'b' ) {
         // X:?begin\n
@@ -154,7 +183,13 @@ bool TiLink::handleCalc() {
         dummyMode();
       }
     } else if ( recvNb == 2 ) { // any other content
-      #define DBG_CBL 1
+
+      bool savedPollMode = isPollMode();
+
+      setPollMode(false); // disable polling
+      delay(ISR_DURATION * 2);
+
+      #define DBG_CBL 0
 
       // HERE : the Ti sends something by itself (CBL, Var)
       bool cblSend = false;
@@ -174,6 +209,7 @@ bool TiLink::handleCalc() {
 
       // 07 & 08 for CBL data - 0 whwn Ti Sends a Var
       uint8_t headLength[1];
+      waitAvailable(100);
       readBytes( headLength, 1 );
       #if DBG_CBL
         Serial.print(F("i:Len to read : "));Serial.println(headLength[0], HEX);
@@ -187,10 +223,13 @@ bool TiLink::handleCalc() {
         // 1st step only
         // just a try ==> don't know why -- TiVoyage200
         // have to read : 0 55 1 55 1 53 2 65 0 1 1 80 7F 0 0 0 8 CB 7 48 8 CB F B1 
-        head = 24;
+        
+        // head = 24; // for Promini version
+        head = 1; // fix on direct ESP32 version ?
       }
 
       uint8_t sendHead[head]; // 2 frst already read ...
+      waitAvailable(200);
       recvNb = readBytes( sendHead, head );
 
       if ( cblSend && ( recvNb <= 0 || sendHead[ 6-1 ] != 0x04 ) ) { // -1 for head len
@@ -207,16 +246,14 @@ bool TiLink::handleCalc() {
           if (!false) Serial.println(F("Send for TiVarSend (? garbage ?)"));
         #endif
         // just ignore this time wait for next packet reading loop
-
-Serial.println(available());
-resetLines();
-
+        setPollMode(savedPollMode); // restore PollMode
         return true;
 
       } else if ( varSend2 ) {
         #if ASCII_OUTPUT
           if (!false) Serial.println(F("Send for TiVarSend 2nd step"));
         #endif
+        waitAvailable(200);
         recvNb = readBytes( sendHead, head );
         // -> 8 0 0 0 = could be the var size LSB -> MSB (A + (B * 256) + (C * 65536) + ... ) WITH +2 for CHK
         // C = var Type : String
@@ -253,11 +290,8 @@ resetLines();
         const static uint8_t cCTS[] = { 0x08, CTS, 0x00, 0x00 };
         ti_write( (uint8_t*)cACK, 4 ); // send ACK
         ti_write( (uint8_t*)cCTS, 4 ); // send CTS
-        while( available() <= 0 ) {
-          // FIXME : timeout
-          delay(30);
-        }
 
+        waitAvailable(100);
         readBytes( TMP_RAM, 4 ); // read ACK of CTS
 
         //       v              [   a  b  c      ch ch] 
@@ -267,10 +301,8 @@ resetLines();
         memset( TMP_RAM, 0x00, prePacketLen );
 
         //recvNb = readBytes( TMP_RAM, prePacketLen, true ); // ,true -> waits for big variables (ex. popbin.ppg -> 24716 bytes long) [FIX]
-        while( available() == 0 ) {
-          // FIXME : add timeout
-          delay(100);
-        }
+        if ( !isPollMode() ) { delay(500); }
+        else { waitAvailable(5000); }
         recvNb = readBytes( TMP_RAM, prePacketLen);
         
         #if DBG_CBL
@@ -295,6 +327,7 @@ resetLines();
         while( total < varLength ) {
           if ( total + usedPacketLen > varLength ) { usedPacketLen = (varLength - total); }
           memset( TMP_RAM, 0x00, usedPacketLen );
+          waitAvailable(100);
           recvNb = readBytes( TMP_RAM, usedPacketLen );
 
           if ( recvNb <= 0 ) {
@@ -305,6 +338,7 @@ resetLines();
           #if ASCII_OUTPUT
             debugDatas( TMP_RAM, usedPacketLen );
           #else
+            // FIXME no more 2 MCUs -> BEWARE
             Serial.write( TMP_RAM, usedPacketLen );
             while( Serial.available() == 0 ) { delay(2); }
             Serial.read(); // waits an handshake
@@ -313,10 +347,7 @@ resetLines();
         }
 
         ti_write( (uint8_t*)cACK, 4 );             // ACK datas -------- ( 0x88 instead of 0x89 for a ti92)
-        while( available() <= 0 ) {
-          // FIXME : timeout
-          delay(30);
-        }
+        waitAvailable(100);
         recvNb = readBytes( TMP_RAM, 4 ); // read EOT   certified on V200
         ti_write( (uint8_t*)cACK, 4 );             // ACK EOT   --------
 
@@ -333,11 +364,7 @@ resetLines();
         CBL_ACK();
         CBL_CTS();
 
-        while( available() <= 0 ) {
-          // FIXME : timeout
-          delay(30);
-        }
-
+        waitAvailable(100);
         // 89 56 0 0 - Ti :ACK
         recvNb = readBytes( recv, 4 );
         if ( recvNb <= 0 ) {
@@ -348,6 +375,7 @@ resetLines();
           #endif
 
           // if (!true) { relaunchKeybPrgm(); return; }
+          setPollMode(savedPollMode); // restore PollMode
           return false;
         }
 
@@ -372,13 +400,14 @@ resetLines();
         //       L M 1 2 3 4 5  6  7  CHK CHK
         // 89 15 7 0 1 0 0 0 20 33 00 54 0 // Send {3}
 
-
+        waitAvailable(100);
         recvNb = readBytes( recv, 4 );
         if ( recvNb <= 0 ) {
           Serial.println(F("E:CBL/DT-HEAD"));
           #if DBG_CBL
             debugDatas(recv, 4);
           #endif
+          setPollMode(savedPollMode); // restore PollMode
           return false;
         }
 
@@ -388,9 +417,11 @@ resetLines();
 
         uint8_t cbldata[dataLen+2]; // +2 for CHK
 
+        waitAvailable(200);
         recvNb = readBytes( cbldata, dataLen+2 );
         if ( recvNb <= 0 ) {
           Serial.println(F("E:CBL/DT-VAL"));
+          setPollMode(savedPollMode); // restore PollMode
           return false;
         }
 
@@ -420,21 +451,19 @@ resetLines();
     #endif
 
         CBL_ACK();
-        while( available() <= 0 ) {
-          // FIXME : timeout
-          delay(30);
-        }
-
+        waitAvailable(100);
         // 89 92 0 0 - Ti : EOT
         recvNb = readBytes( recv, 4 );
         if ( recvNb <= 0 ) {
           Serial.println(F("E:CBL/EOT"));
+          setPollMode(savedPollMode); // restore PollMode
           return false;
         }
         CBL_ACK();
       } // end if cblSend
 
-    }
+      setPollMode(savedPollMode); // restore PollMode
+    } // endOf any other content
   } 
   // else {
   //   int b = read();

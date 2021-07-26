@@ -12,6 +12,8 @@ TiLink tilink;
 // ================================================
 // Specific ESP32 Timer
 volatile bool ISRLOCKED = false;
+volatile bool pollMode = true;
+
 hw_timer_t * timer = NULL;
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
@@ -25,11 +27,19 @@ void IRAM_ATTR onTimer() {
     
     // if takes long more than ISR frequency -> Exception
     // (Guru Meditation Error: Core  1 panic'ed (Interrupt wdt timeout on CPU1)
-    tilink.poll(true);
+    if (pollMode) tilink.poll(true);
   }
   ISRLOCKED = false; // auto release
 
   portEXIT_CRITICAL_ISR(&timerMux);
+}
+
+void setPollMode(bool state) {
+  pollMode = state;
+}
+
+bool isPollMode() {
+  return pollMode;
 }
 
 void lockISR() {
@@ -37,7 +47,7 @@ void lockISR() {
         return;
     }
     ISRLOCKED = true;
-    delay(ISR_DURATION); // ensure exit from ISR
+    if ( isPollMode() ) delay(ISR_DURATION); // ensure exit from ISR
 }
 
 void installISR(int msec) {

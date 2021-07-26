@@ -24,6 +24,7 @@ class TiLink : public Stream {
 
       bool handleCalc();
 
+      bool waitAvailable(long timeout=1000);
       void poll(bool isrMode=false); // ...
 
       // - Stream extension - 
