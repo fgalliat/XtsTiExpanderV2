@@ -22,7 +22,7 @@ homDir="/home/$(whoami)"
 verbose="-verbose"
 verbose=""
 
-addDir="-libraries ../../../libs"
+addDir="-libraries ../../libs"
 
 #rm -rf $outDir && true 2>/dev/null 
 #rm -rf $cahDir && true 2>/dev/null
