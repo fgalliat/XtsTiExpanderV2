@@ -18,8 +18,21 @@
 #include "lib_storage.h"
 #include "lib_tilink.h"
 
-#define TTGO_TDISPLAY 0
+#define TTGO_TDISPLAY 1
 
-// that works !! -- re-check Wiring
-#define TI_TIP 19
-#define TI_RING 18
+#if TTGO_TDISPLAY
+    // no 2, 12
+    // -- re-check Wiring
+
+    // can write but not read
+    // #define TI_TIP 13
+    // #define TI_RING 17
+
+    // works in non pollMode
+    #define TI_TIP 21
+    #define TI_RING 22
+#else
+    // that works !! -- re-check Wiring
+    #define TI_TIP 19
+    #define TI_RING 18
+#endif

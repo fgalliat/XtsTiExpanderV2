@@ -22,6 +22,7 @@ if [ -e /vm_mnt/opt/devl/Arduino ] ; then
  # COM11 windows -> auto mapped w/ WSL
 comPort="/dev/ttyS3"
 #comPort="/dev/ttyS5"
+comPort="/dev/ttyS4"
 else 
 # 'nux
 comPort="/dev/ttyUSB0"

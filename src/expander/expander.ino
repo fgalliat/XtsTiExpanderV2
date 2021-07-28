@@ -62,6 +62,8 @@ void installISR(int msec) {
 }
 // ================================================
 
+#define NO_ISR 1
+
 void setup() {
     Serial.begin(115200);
 
@@ -80,7 +82,11 @@ void setup() {
         Serial.println("(!!) Setup may be incomplete");
     }
 
-    installISR(ISR_DURATION); // need 16ms to read a byte
+   #if NO_ISR
+     setPollMode(false);
+   #else
+     installISR(ISR_DURATION); // need 16ms to read a byte
+   #endif
 }
 
 void loop() {
@@ -97,7 +103,11 @@ void loop() {
     //     }
     //     tilink.resetLines();
     // }
+#if NO_ISR
     tilink.handleCalc();
+#else
+    tilink.handleCalc();
+#endif
 
     if ( Serial.available() ) {
         int b = Serial.read();

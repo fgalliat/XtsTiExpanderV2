@@ -348,17 +348,31 @@ bool TiLink::waitAvailable(long timeout) {
 }
 
 bool TiLink::handleCalc() {
-  if ( available() <= 0 ) { return false; }
+  bool savedPollMode = isPollMode();
+
+  if ( savedPollMode && available() <= 0 ) { return false; }
 
   int recvNb;
 
   // Serial.println(available());
 
   // FIXME : better -- Cf further read() single byte
-  if ( available() < 2 ) { return false; }
+  if ( savedPollMode && available() < 2 ) { return false; }
 
-  if ( available() >= 2 ) {
-    recvNb = readBytes(recv, 2);
+  if ( !savedPollMode || available() >= 2 ) {
+
+    if ( savedPollMode ) {
+      recvNb = readBytes(recv, 2);
+    } else {
+      int byte0 = ti_read(10,10);
+      if ( byte0 < 0 ) {
+        return false;
+      }
+      int byte1 = ti_read();
+      recv[0] = (uint8_t)byte0;
+      recv[1] = (uint8_t)byte1;
+      recvNb = 2;
+    }
 
     // ASM version PRGM starts - direct bytes
     if ( recvNb == 2 && recv[0] == 'X' && recv[1] == ':' ) {
@@ -370,9 +384,6 @@ bool TiLink::handleCalc() {
         dummyMode();
       }
     } else if ( recvNb == 2 ) { // any other content
-
-      bool savedPollMode = isPollMode();
-
       setPollMode(false); // disable polling
       delay(ISR_DURATION * 2);
 

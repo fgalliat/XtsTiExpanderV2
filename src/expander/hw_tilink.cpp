@@ -70,6 +70,8 @@ bool setup_tilink(int tip, int ring) {
     }
 
     __resetTILines(!true);
+// 	pinMode(TIring, INPUT_PULLUP);
+//   pinMode(TItip, INPUT_PULLUP);
 
     return true;
 }
@@ -77,6 +79,9 @@ bool setup_tilink(int tip, int ring) {
 void __resetTILines(bool reboot) {
   pinMode(TIring, INPUT_PULLUP);
   pinMode(TItip, INPUT_PULLUP);
+// digitalWrite(TIring, HIGH);       // turn on pullup resistors
+//   digitalWrite(TItip, HIGH);        // turn on pullup resistors
+
   // if (reboot) {
   //   digitalWrite(TIring, LOW);       // for reset purposes
   //   digitalWrite(TItip, LOW);        // for reset purposes
