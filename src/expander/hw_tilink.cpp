@@ -11,6 +11,10 @@
 
 extern void lockISR();
 
+#define ISR_DURATION 20
+extern bool isPollMode();
+extern void setPollMode(bool state);
+
 // ------ Wiring ------------
 //  //White 
 // #define TIring -256
@@ -228,7 +232,9 @@ int ti_recv(uint8_t* seg, int segMaxLen) {
 }
 
 bool ti_reqScreen(Stream* output, bool ascii) {
-  // lockISR(); // not for now
+  bool savedPollMode = isPollMode();
+  setPollMode(false); // disable polling
+  delay(ISR_DURATION * 2);
 
   int recvNb = -1;
   resetLines();
@@ -244,6 +250,7 @@ bool ti_reqScreen(Stream* output, bool ascii) {
   recvNb = ti_recv(recv, 4); // ? 89 15 00 0F ? <TI92> <?> <LL> <HH> => 00 0F => 0F 00 = 3840 screen mem size
   if ( recvNb != 4 ) {
     serial_.println(F("E:TI did not ACK'ed, abort"));
+	setPollMode(savedPollMode);
     return false;
   }
   
@@ -282,6 +289,7 @@ bool ti_reqScreen(Stream* output, bool ascii) {
   data[1] = REP_OK;
   ti_write(data, 4); // Arduino's ACK
   // delay(50);
+  setPollMode(savedPollMode);
   return true;
 }
 
