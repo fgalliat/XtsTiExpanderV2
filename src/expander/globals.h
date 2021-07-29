@@ -28,9 +28,9 @@
     // #define TI_TIP 13
     // #define TI_RING 17
 
-    // works in non pollMode
-    #define TI_TIP 21
-    #define TI_RING 22
+    // works in non pollMode -- re-check Wiring
+    #define TI_TIP 22
+    #define TI_RING 21
 #else
     // that works !! -- re-check Wiring
     #define TI_TIP 19
