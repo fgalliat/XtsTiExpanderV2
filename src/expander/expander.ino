@@ -67,7 +67,7 @@ void installISR(int msec) {
 
 #if TTGO_TDISPLAY
  // FIXME : refactor
-    #include <TFT_eSPI.h>
+    
     #include <SPI.h>
     #include "WiFi.h"
     #include <Wire.h>
@@ -92,6 +92,11 @@ void installISR(int msec) {
 TFT_eSPI tft = TFT_eSPI(135, 240); // Invoke custom library
 Button2 btn1(BUTTON_1);
 Button2 btn2(BUTTON_2);
+
+uint16_t ti_bgColor = TFT_GREENYELLOW;
+uint16_t ti_fgColor = TFT_BLACK;
+
+
 
 // char buff[512];
 int vref = 1100;

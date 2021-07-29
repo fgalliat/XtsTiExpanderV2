@@ -21,18 +21,20 @@
 #define TTGO_TDISPLAY 1
 
 #if TTGO_TDISPLAY
+    #include <TFT_eSPI.h>
+    
     // no 2, 12
-    // -- re-check Wiring
-
     // can write but not read
     // #define TI_TIP 13
     // #define TI_RING 17
 
-    // works in non pollMode -- re-check Wiring
+    // I was not able to use others pins from that board ..
+    // works in non pollMode -- re-check Wiring (red Vs white)
     #define TI_TIP 22
     #define TI_RING 21
 #else
-    // that works !! -- re-check Wiring
+    // tested on ESP32 DevKit r1 
+    // that works !! -- re-check Wiring (red Vs white)
     #define TI_TIP 19
     #define TI_RING 18
 #endif

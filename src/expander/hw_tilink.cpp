@@ -7,6 +7,7 @@
  */
 
 #include <Arduino.h>
+#include "globals.h"
 #include "hw_tilink.h"
 
 extern void lockISR();
@@ -15,12 +16,13 @@ extern void lockISR();
 extern bool isPollMode();
 extern void setPollMode(bool state);
 
-// ------ Wiring ------------
-//  //White 
-// #define TIring -256
-//  //Red 
-// #define TItip -255
+#if TTGO_TDISPLAY
+extern TFT_eSPI tft;
+extern uint16_t ti_bgColor;
+extern uint16_t ti_fgColor;
+#endif
 
+// ------ Wiring ------------
 //White
 int TIring = -1;
 //Red
@@ -264,7 +266,14 @@ bool ti_reqScreen(Stream* output, bool ascii) {
     output->write( (uint8_t)(MAX_TI_SCR_SIZE % 256) );
   }
 
+  #if TTGO_TDISPLAY
+    int rot = tft.getRotation();
+    tft.setRotation(1);
+	tft.fillRect(0,0,tft.width(), tft.height(), ti_bgColor);
+  #endif
+
   // Dumping screen raster
+  int xx = 0, yy = 0;
   for(int j=0; j < MAX_TI_SCR_SIZE; j+=SCREEN_SEG_MEM) {
     int howMany = (j+SCREEN_SEG_MEM) < MAX_TI_SCR_SIZE ? SCREEN_SEG_MEM : SCREEN_SEG_MEM - ( (j+SCREEN_SEG_MEM) % MAX_TI_SCR_SIZE );
 
@@ -276,17 +285,27 @@ bool ti_reqScreen(Stream* output, bool ascii) {
 		for (int i = 0; i < howMany; i++) {
 			for (int j = 7; j >= 0; j--) {
 				if (screen[i] & (1 << j)) {
+					#if TTGO_TDISPLAY
+					  if ( yy < tft.height() ) { tft.drawPixel( xx, yy, ti_fgColor ); }
+					#endif
 					output->write('#');
 				} else {
 					output->write('.');
 				}
+				xx++;
 			}
 			if (i % (TI_SCREEN_WIDTH/8) == (TI_SCREEN_WIDTH/8)-1) { // 240/8 => 30 bytes
 				output->println();
+				yy++;
+				xx = 0;
 			}
 		}
 	}
   }
+
+  #if TTGO_TDISPLAY
+    tft.setRotation(rot);
+  #endif
 
   recvNb = ti_recv(recv, 2); // checksum from TI
   //Serial.println(recvNb);
