@@ -6,10 +6,24 @@
 ![TTGO T_DISPLAY screen dump of TiVoyage 200](./pictures/TTGO_displayTI.jpg)
 (My TTGO T_Display is now able to make a Ti ScreenDump w/ ONLY Battery 3.7v as PWR !)
 
+- **Main Features** :
+
+- [x] PWR on Batt
+- [x] Var Upload
+- [ ] Var Download
+- [x] Screen dump
+- [ ] SPIFFS
+- [ ] Buzzer
+- [ ] WiFi
+- [ ] 'tiaction' spe Var handle
+
+
+
 
  - [x] connect & send/receive bytes to Ti Voyage 200
 
  - [~] SerialTerm to V200
+   
    - [~] Dummy mode
    - [~] CBL Keyb mode
    - [x] Raw

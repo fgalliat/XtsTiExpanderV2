@@ -255,7 +255,22 @@ void setup() {
    #endif
 }
 
+long lastTime = millis();
+
 void loop() {
+
+   #if HAS_DISPLAY
+    if ( millis() - lastTime > 1000 ) {
+        uint16_t v = analogRead(ADC_PIN);
+        float battery_voltage = ((float)v / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
+
+        scLandscape();
+        scPowerJauge( battery_voltage );
+        scRestore();
+        lastTime = millis();
+    }
+  #endif
+
     // tilink.poll();
 
     // if ( tilink.available() ) {

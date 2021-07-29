@@ -34,3 +34,27 @@ void scLowerJauge(int percent) {
     tft.drawRoundRect(xx-4, yy, www, hhh, 3, ti_fgColor);
     tft.fillRect(xx, yy+1+1, ww, hh, ti_fgColor);
 }
+
+// long map(long x, long in_min, long in_max, long out_min, long out_max) {
+//   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+// }
+
+long voltsToLong(float v) {
+  return (long)( v * 100.0 );
+}
+
+void scPowerJauge(float voltage) {
+  int percent = (int)map( voltsToLong(voltage), voltsToLong(3.0), voltsToLong(5.0), 0, 100 );
+
+  int wMax = 30;
+  int www = wMax + 2 + 2;
+  int ww = 100 * percent / wMax;
+  int xx = 240 - www - 5;
+  int yy = 10;
+  int hh = 2;
+  int hhh = hh + 2 + 2;
+
+  tft.fillRect(xx-4,yy, www, hhh, ti_bgColor);
+  tft.drawRoundRect(xx-4, yy, www, hhh, 3, ti_fgColor);
+  tft.fillRect(xx, yy+1+1, ww, hh, ti_fgColor);
+}

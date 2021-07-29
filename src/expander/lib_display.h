@@ -11,3 +11,4 @@ void scCls();
 void scLandscape();
 void scRestore();
 void scLowerJauge(int percent);
+void scPowerJauge(float voltage);
