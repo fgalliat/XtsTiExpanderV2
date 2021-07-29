@@ -155,6 +155,7 @@ void button_init()
         btnCick = false;
         Serial.println("btn press wifi scan");
         // wifi_scan();
+        tilink.requestScreen(NULL, true);
     });
 }
 
@@ -203,7 +204,7 @@ void setupHardware() {
     tft.setTextDatum(MC_DATUM);
 
     tft.drawString("LeftButton:", tft.width() / 2, tft.height() / 2 - 16);
-    tft.drawString("[WiFi Scan]", tft.width() / 2, tft.height() / 2 );
+    tft.drawString("[Screen Dump]", tft.width() / 2, tft.height() / 2 );
     tft.drawString("RightButton:", tft.width() / 2, tft.height() / 2 + 16);
     tft.drawString("[Voltage Monitor]", tft.width() / 2, tft.height() / 2 + 32 );
     tft.drawString("RightButtonLongPress:", tft.width() / 2, tft.height() / 2 + 48);

@@ -261,7 +261,7 @@ bool ti_reqScreen(Stream* output, bool ascii) {
     return false;
   }
   
-  if ( !ascii ) {
+  if ( !ascii && output != NULL ) {
     output->write( (uint8_t)(MAX_TI_SCR_SIZE >> 8) );
     output->write( (uint8_t)(MAX_TI_SCR_SIZE % 256) );
   }
@@ -278,8 +278,7 @@ bool ti_reqScreen(Stream* output, bool ascii) {
     int howMany = (j+SCREEN_SEG_MEM) < MAX_TI_SCR_SIZE ? SCREEN_SEG_MEM : SCREEN_SEG_MEM - ( (j+SCREEN_SEG_MEM) % MAX_TI_SCR_SIZE );
 
     ti_recv(screen, howMany);
-    //dispScreenMem(howMany, ascii);
-	if ( !ascii ) {
+	if ( !ascii && output != NULL ) {
 		output->write( screen, howMany );
 	} else {
 		for (int i = 0; i < howMany; i++) {
@@ -288,14 +287,14 @@ bool ti_reqScreen(Stream* output, bool ascii) {
 					#if TTGO_TDISPLAY
 					  if ( yy < tft.height() ) { tft.drawPixel( xx, yy, ti_fgColor ); }
 					#endif
-					output->write('#');
+					if (output != NULL) output->write('#');
 				} else {
-					output->write('.');
+					if (output != NULL) output->write('.');
 				}
 				xx++;
 			}
 			if (i % (TI_SCREEN_WIDTH/8) == (TI_SCREEN_WIDTH/8)-1) { // 240/8 => 30 bytes
-				output->println();
+				if (output != NULL) output->println();
 				yy++;
 				xx = 0;
 			}
