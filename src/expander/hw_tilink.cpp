@@ -16,12 +16,6 @@ extern void lockISR();
 extern bool isPollMode();
 extern void setPollMode(bool state);
 
-#if TTGO_TDISPLAY
-extern TFT_eSPI tft;
-extern uint16_t ti_bgColor;
-extern uint16_t ti_fgColor;
-#endif
-
 // ------ Wiring ------------
 //White
 int TIring = -1;
@@ -266,10 +260,10 @@ bool ti_reqScreen(Stream* output, bool ascii) {
     output->write( (uint8_t)(MAX_TI_SCR_SIZE % 256) );
   }
 
-  #if TTGO_TDISPLAY
+  #if HAS_DISPLAY
     int rot = tft.getRotation();
     tft.setRotation(1);
-	tft.fillRect(0,0,tft.width(), tft.height(), ti_bgColor);
+	scCls();
   #endif
 
   // Dumping screen raster
@@ -284,7 +278,7 @@ bool ti_reqScreen(Stream* output, bool ascii) {
 		for (int i = 0; i < howMany; i++) {
 			for (int j = 7; j >= 0; j--) {
 				if (screen[i] & (1 << j)) {
-					#if TTGO_TDISPLAY
+					#if HAS_DISPLAY
 					  if ( yy < tft.height() ) { tft.drawPixel( xx, yy, ti_fgColor ); }
 					#endif
 					if (output != NULL) output->write('#');

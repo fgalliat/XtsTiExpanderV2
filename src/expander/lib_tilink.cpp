@@ -470,6 +470,16 @@ bool TiLink::handleCalc() {
         uint8_t varType = sendHead[5]; // 0C -> STR
         uint32_t varLength = sendHead[1] + ( sendHead[2] << 8 ) + ( sendHead[3] << 16 ) + ( sendHead[4] << 24 );
 
+        #if HAS_DISPLAY
+          int rot = tft.getRotation();
+          tft.setRotation(1);
+          scCls();
+          tft.print(F("TiVarSend >> name : ")); tft.println(varName); 
+          tft.print(F("TiVarSend >> type : ")); tft.println(varType, HEX); 
+          tft.print(F("TiVarSend >> varLength : ")); tft.println(varLength); 
+          tft.setRotation(rot);
+        #endif
+
         #if ASCII_OUTPUT
           if (!false) { 
             Serial.print(F("TiVarSend >> name : ")); Serial.println(varName); 
@@ -510,6 +520,12 @@ bool TiLink::handleCalc() {
 
         if ( recvNb <= 0 ) {
           Serial.println( F("E:Failed to read from Ti") );
+          #if HAS_DISPLAY
+            int rot = tft.getRotation();
+            tft.setRotation(1);
+            tft.println( F("E:Failed to read from Ti") );
+            tft.setRotation(rot);
+          #endif
         }
 
         // CHK is a part of Var ? -> YES
@@ -530,11 +546,27 @@ bool TiLink::handleCalc() {
 
           if ( recvNb <= 0 ) {
             Serial.println( F("E:Failed to read from Ti") );
+            #if HAS_DISPLAY
+              scLandscape();
+              tft.println( F("E:Failed to read from Ti (2)") );
+              scRestore();
+            #endif
             break;
           }
 
           #if ASCII_OUTPUT
             debugDatas( TMP_RAM, usedPacketLen );
+
+            #if HAS_DISPLAY
+              int p = ( 100 * (total + usedPacketLen) / varLength );
+              scLandscape();
+              // tft.print( F("TiVarSend >> "));
+              // tft.print( p );
+              // tft.println( " %" );
+              scLowerJauge(p);
+              scRestore();
+            #endif
+
           #else
             // FIXME no more 2 MCUs -> BEWARE
             Serial.write( TMP_RAM, usedPacketLen );
@@ -546,6 +578,11 @@ bool TiLink::handleCalc() {
 
         #if ASCII_OUTPUT
           if (!false) Serial.println(F("TiVarSend >> eof"));
+          #if HAS_DISPLAY
+            scLandscape();
+            tft.println( F("TiVarSend >> eof"));
+            scRestore();
+          #endif
         #endif
 
         ti_write( (uint8_t*)cACK, 4 );             // ACK datas -------- ( 0x88 instead of 0x89 for a ti92)
@@ -555,6 +592,11 @@ bool TiLink::handleCalc() {
 
         #if ASCII_OUTPUT
           if (!false) Serial.println(F("TiVarSend >> eot"));
+          #if HAS_DISPLAY
+            scLandscape();
+            tft.println( F("TiVarSend >> eot"));
+            scRestore();
+          #endif
         #else
           Serial.print(F(OUT_BIN_SENDVAR_EOF));
         #endif
