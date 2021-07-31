@@ -227,6 +227,8 @@ void ttgo_loop()
 #endif
 
 // =========== HiLevel ti handle ==========
+char tiActionValue[64];
+
 void tiAction(char* request);
 
 void handleTiActionData(uint8_t* segment, int segLen, uint32_t count, uint32_t total) {
@@ -243,14 +245,23 @@ void handleTiActionData(uint8_t* segment, int segLen, uint32_t count, uint32_t t
         // beware when multipacket -> will not contains trailling 0x00 in this packet...
         return;
     }
+    
+    sprintf(tiActionValue, "%s", value);
+}
 
-    tiAction(value);
+void handleTiActionFlush() {
+    if ( strlen( tiActionValue ) > 0 ) {
+        tiAction(tiActionValue);
+    }
 }
 
 void tiAction(char* action) {
   if ( strncmp("play:", action, 5) == 0 ) {
       char* tune = &action[5];
       speaker.playTuneString( tune );
+  } else if ( strncmp("get:", action, 4) == 0 ) {
+      char* varName = &action[4];
+      tilink.sendVar( varName );
   } else {
       Serial.println("Unknown action");
   }
@@ -334,8 +345,11 @@ void loop() {
         } else if ( b == 0x04 ) { // Ctrl-D
             tilink.sendKeyStroke( KEYCODE_CLEAR );
             tilink.sendKeyStrokes( "Hello world !" );
+        } else if ( b == 0x05 ) { // Ctrl-E
+            storage.lsToStream(&Serial, SHELL_MODE_SERIAL);
+        } else {
+            tilink.write(b);
         }
-        tilink.write(b);
     }
 
    #if HAS_DISPLAY

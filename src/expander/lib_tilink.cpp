@@ -14,7 +14,7 @@ extern bool isPollMode();
 extern void setPollMode(bool state);
 
 extern void handleTiActionData(uint8_t* segment, int segLen, uint32_t count, uint32_t total);
-
+extern void handleTiActionFlush();
 
 uint8_t inputBuff[INPUT_BUFF_LEN+1];
 int inputBuffCursor = 0;
@@ -484,14 +484,28 @@ bool TiLink::handleCalc() {
         }
 
         #if HAS_DISPLAY
-          int rot = tft.getRotation();
-          tft.setRotation(1);
+          scLandscape();
           scCls();
           tft.print(F("TiVarSend >> name : ")); tft.println(varName); 
           tft.print(F("TiVarSend >> type : ")); tft.println(varType, HEX); 
           tft.print(F("TiVarSend >> varLength : ")); tft.println(varLength); 
-          tft.setRotation(rot);
+          scRestore();
         #endif
+
+        File f;
+        bool store = !isSpeVarForHandle && storage.isReady();
+        if ( store ) {
+          int error = 0;
+          f = storage.createTiFile(varName, varType, error);
+          if ( error != 0 ) {
+            // FIXME : refactor : WARNING code
+            scLandscape();
+            tft.println(F(""));
+            tft.println(F("[EE] Failed to open file !"));
+            scRestore();
+            store = false;
+          }
+        }
 
         #if ASCII_OUTPUT
           if (!false) { 
@@ -591,6 +605,8 @@ bool TiLink::handleCalc() {
 
           if (isSpeVarForHandle) {
             handleTiActionData( TMP_RAM, usedPacketLen, total, varLength );
+          } else if ( store ) {
+            f.write( TMP_RAM, usedPacketLen );
           }
 
           total += usedPacketLen;
@@ -621,6 +637,12 @@ bool TiLink::handleCalc() {
           Serial.print(F(OUT_BIN_SENDVAR_EOF));
         #endif
 
+        if (isSpeVarForHandle) {
+          handleTiActionFlush();
+        } else if ( store ) {
+          f.flush();
+          f.close();
+        }
 
       } // end of VarSend2
 
@@ -743,5 +765,107 @@ bool TiLink::handleCalc() {
   //   resetLines();
   // }
 
+  return true;
+}
+
+bool TiLink::sendVar(char* varName, bool silent) {
+  if ( !silent ) {
+    Serial.println("Send NOT SILENT -> NYI.");
+    return false;
+  }
+
+  char* filename = storage.findTiFile(varName);
+  if ( filename == NULL ) {
+    // FIXME : WARNING code
+    Serial.println("Var NOT found");
+    return false;   
+  }
+
+  File f = storage.getTiFile(filename);
+  if ( !f ) {
+    // FIXME : WARNING code
+    Serial.println("Var NOT reachable");
+    return false;
+  }
+
+  bool savedMode = isPollMode();
+  setPollMode(false);
+
+  long fileSize = f.size();
+  long varSize = fileSize-2; // w/o chkLen
+
+  int nlength = strlen( filename );
+  char* strVarType = &filename[ nlength - 2 ];
+  uint8_t varType = (uint8_t)hexStrToInt( strVarType );
+  
+  #if HAS_DISPLAY
+    scLandscape();
+    scCls();
+    tft.print(F("TiVarSend << name : ")); tft.println(varName); 
+    tft.print(F("TiVarSend << type : ")); tft.println(varType, HEX); 
+    tft.print(F("TiVarSend << varLength : ")); tft.println(varSize); 
+    scRestore();
+  #endif
+
+
+  long initDatasLen = varSize;
+  char data[ 20 + (/*sendingMode == SEND_MODE_RAM ? initDatasLen :*/ 0 ) ];
+  data[0] = (unsigned char) ((initDatasLen + 0) / 256);
+  data[1] = (unsigned char) ((initDatasLen + 0) % 256);
+  long dataLen = 2 + initDatasLen;
+
+  #if HAS_DISPLAY
+    scLandscape();
+    scCls();
+    scLowerJauge( 100 );
+    scRestore();
+  #endif
+
+  // == RTS ==
+  int len = 0;
+  ti_header(filename, varType, dataLen, silent, len, true);
+  delay(DEFAULT_POST_DELAY);
+
+  uint8_t recv[4];
+  
+  // == ACK ==
+  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK")); return -1; }
+  
+  // == CTS ==
+  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read CTS")); return -1; }
+  
+  // == ACK ==
+  uint8_t B[4] = { 0x09, 0x56, 0x00, 0x00 };
+  ti_write(B, 4);
+  delay(DEFAULT_POST_DELAY/2);
+  
+  // == XDP == 
+  bool archived = false;
+  int sendingMode = SEND_MODE_SERIAL;
+  ti_xdp(data, dataLen, sendingMode, silent, len, archived, &f, false);
+  delay(DEFAULT_POST_DELAY/2);
+  
+  // == ACK ==
+  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK (2)")); return -1; }
+  
+  // == EOT ==
+  uint8_t D[4] = { 0x09, 0x92, 0x00, 0x00 };
+  ti_write(D, 4);
+  delay(DEFAULT_POST_DELAY/2);  
+  
+  // ACK ==
+  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK (3)")); return -1; }
+
+  Serial.println(F("I:Var sent"));
+  #if HAS_DISPLAY
+    scLandscape();
+    scCls();
+    scLowerJauge( 100 );
+    scRestore();
+  #endif
+
+  f.close();
+
+  setPollMode(savedMode);
   return true;
 }

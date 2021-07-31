@@ -207,6 +207,26 @@ int ti_read(long enterTimeout, long nextTimeout) {
   return (int)byte;
 }
 
+// return read bytes
+int ti_recv(uint8_t* seg, int segMaxLen, bool waitLong) {
+	for(int i=0; i < segMaxLen; i++) {
+		if ( i == 0 && waitLong ) {
+			int tmp = ti_read(10000, 2000);
+			if ( tmp < 0 ) {
+				return 0;
+			}
+			seg[0] = (uint8_t)tmp;
+		} else {
+			int tmp = ti_read();
+			if ( tmp < 0 ) {
+				return i;
+			}
+			seg[i] = (uint8_t)tmp;
+		}
+	}
+	return segMaxLen;
+}
+
 int ti_write(uint8_t* seg, int segLen) {
     int result;
     for(int i=0; i < segLen; i++) {
@@ -219,18 +239,18 @@ int ti_write(uint8_t* seg, int segLen) {
     return segLen;
 }
 
-int ti_recv(uint8_t* seg, int segMaxLen) {
-    int result;
-    for(int i=0; i < segMaxLen; i++) {
-        result = ti_read();
-        // TODO : need WAIT ?
-        if ( result < 0 ) {
-            return i;
-        }
-        seg[i] = (uint8_t)result;
-    }
-    return segMaxLen;
-}
+// int ti_recv(uint8_t* seg, int segMaxLen) {
+//     int result;
+//     for(int i=0; i < segMaxLen; i++) {
+//         result = ti_read();
+//         // TODO : need WAIT ?
+//         if ( result < 0 ) {
+//             return i;
+//         }
+//         seg[i] = (uint8_t)result;
+//     }
+//     return segMaxLen;
+// }
 
 bool ti_reqScreen(Stream* output, bool ascii) {
   bool savedPollMode = isPollMode();
@@ -332,4 +352,220 @@ int ti_sendKeyStroke(int data) {
 
 bool ti_handle() {
 	return false;
+}
+
+// ============================================
+void ti_header(const char* constCharFileName, int fileType, int dataLen, bool silent, int& dtLen, bool send) {
+	int i;
+
+	int nameLength = strlen(constCharFileName);
+	// packLen = 4 bytes for dataLen
+	// + 1 for dataType
+	// + 1 for fileName.length
+	// + n for filename
+	// + 1 for 0 terminating
+	int packLen = 4 + 1 + 1 + nameLength + 1;
+	// finalLen is : 1 byte for machine ID
+	// + 1 for cmd
+	// + 2 for packLen
+	// + packLen
+	// + 2 for CHK
+	const int finalLen = 1 + 1 + 2 + packLen + 2;
+
+    // static : the ONLY way to be sure to return correctly the given array (when converting to pointer)
+    // but consume all RAM
+    uint8_t result[ finalLen ];
+	//static char result[ 256 ];
+
+	// MACHINE ID
+	result[0] = (char) (silent ? 0x09 : 0x08);
+	// CMD
+	result[1] = (char) (silent ? 0xC9 : 0x06);
+    //result[1] = (char) (silent ? 0x06 : 0xC9);
+
+	// packet length
+	result[2] = (char) (packLen % 256);
+	result[3] = (char) (packLen / 256);
+
+	// dataLen :: TODO : manager more than 64KB files
+	result[4] = (char) (dataLen % 256);
+	result[5] = (char) (dataLen / 256);
+	result[6] = 0;
+	result[7] = 0;
+
+	// file type
+	result[8] = (char) fileType;
+
+	// file name length
+	result[9] = (char) nameLength;
+
+	// file name
+	for (i = 0; i < nameLength; i++) {
+		result[10 + i] = constCharFileName[i];
+	}
+	// zero-terminated
+	result[10 + nameLength] = (char) 0;
+
+	// 11+nameLength => 0
+	// 12+nameLength => 0
+
+	// CHK
+	uint8_t* chk = ti_chk(result, finalLen);
+    result[11 + nameLength] = *(chk+0);
+	result[12 + nameLength] = *(chk+1);
+                
+    dtLen = finalLen;
+
+    if (send) {
+       ti_write(result, finalLen);
+    }
+}
+
+#define MSW(msg) ( (int) (msg >> 16) )
+#define LSW(msg) ( (int) (msg & 65535) )
+#define LSB( byt ) ( (int) (byt & 255) )
+#define MSB( byt ) ( (int) (byt >> 8) )
+
+
+void ti_xdp(char data[], int dataLen, int sendingMode, bool silent, int& dtLen, bool archived, Stream* input, bool inputIsSerial) {
+	// packLen = 4 bytes for dataLen
+	// + n for filename
+	int packLen = 4 + dataLen;
+
+	// finalLen is : 1 byte for machine ID
+	// + 1 for cmd
+	// + 2 for packLen
+	// + packLen
+	// + 2 for CHK
+	int finalLen = 1 + 1 + 2 + packLen + 2;
+
+    uint8_t result[8];
+
+	// MACHINE ID
+	result[0] = (char) (silent ? 0x09 : 0x08);
+	// CMD
+	result[1] = (char) 0x15;
+
+	// packet length
+	result[2] = (char) (packLen % 256);
+	result[3] = (char) (packLen / 256);
+
+	// dataLen :: TODO : ???
+	result[4] = 0;
+	result[5] = 0;
+    result[6] = 0;
+	result[7] = 0;
+    // result[4] = LSB(LSW(dataLen));
+    // result[5] = MSB(LSW(dataLen));
+    // result[6] = LSB(MSW(dataLen));
+    // result[7] = MSB(MSW(dataLen));
+
+    uint16_t sum = 0;
+
+    // head
+    ti_write(result, 8);
+    delay( DEFAULT_POST_DELAY/2 );
+
+    // data
+	// FIXME : better refacto
+
+    // if ( sendingMode == SEND_MODE_RAM ) {
+    //   sum = 0;
+    //   for (int i = 0; i < dataLen; i++) { sum += (uint8_t)data[i];	}
+    //   ti_send( (uint8_t*)data, dataLen);
+    //   delay( DEFAULT_POST_DELAY/2 );
+    // } else if ( sendingMode == SEND_MODE_FLASH ) {
+    //   // Var len
+    //   sum = 0;
+    //   sum += (uint8_t)data[0];	
+    //   sum += (uint8_t)data[1];	
+    //   ti_send( (uint8_t*)data, 2);
+    //   // outprintln(F("FLH > VarLen"));
+
+    //   uint8_t D[1];
+    //   for (int i = 0; i < dataLen-2; i++) { 
+    //     D[0] = pgm_read_byte_near(FILE_CONTENT + VAR_FILE_DATA_OFFSET + i);
+
+    //     #if MODE_92P_ASM
+    //     if ( i == dataLen - 2 - 3 ) {
+    //        D[0] = (uint8_t)( archived ? VAR_ARCHIVED_YES : VAR_ARCHIVED_NO );
+    //     }
+    //     #endif
+        
+    //     sum += (uint8_t)D[0];	
+    //     ti_send( (uint8_t*)D, 1);
+    //   }
+    //   delay( DEFAULT_POST_DELAY/2 );
+    // } else 
+	if ( sendingMode == SEND_MODE_SERIAL ) {
+      // Var len
+      sum = 0;
+      sum += (uint8_t)data[0];	
+      sum += (uint8_t)data[1];	
+      ti_write( (uint8_t*)data, 2);
+
+      //const int BLOC_LEN =128;
+      //uint8_t D[BLOC_LEN]; 
+      const int BLOC_LEN =64;
+      uint8_t* D = screen;
+      int e;
+      for (int i = 0; i < dataLen-2; i+=BLOC_LEN) { 
+
+        e = BLOC_LEN;
+        if ( i+BLOC_LEN > dataLen-2 ) { e = (dataLen-2)-i; }
+
+if (inputIsSerial) {
+       // request to send - handshake
+       input->write( 0x02 );
+       while( input->available() == 0 ) {delay(1);}
+}
+
+        // even if ends w/ garbages
+       // serPort.readBytes( D, BLOC_LEN );
+        input->readBytes( D, BLOC_LEN );
+
+        for(int j=0; j < e; j++) { 
+          // if ( i+j == dataLen - 2 - 3 ) {
+          //   D[j] = (uint8_t)( archived ? VAR_ARCHIVED_YES : VAR_ARCHIVED_NO );
+          // }
+          sum += D[j];	
+        } 
+        ti_write( D, e);
+      }
+      //delay( DEFAULT_POST_DELAY/2 );
+    } else {
+      Serial.println(F("E:OUPS !!!"));
+    } 
+
+    delay( DEFAULT_POST_DELAY/2 );
+	// 8+nameLength => 0
+	// 9+nameLength => 0
+    sum &= 0xFFFF;
+	int checksum0 = (unsigned char)(sum % 256);
+	int checksum1 = (unsigned char)(sum / 256);// & 0xFF;
+
+    result[0] = checksum0;
+    // temp Cf 2A 27 instead of 8C 27
+    // result[0] = 0x8C; // 8C 27 two last bytes of file
+    result[1] = checksum1;
+
+    dtLen = finalLen;
+
+    ti_write(result, 2);
+    delay( DEFAULT_POST_DELAY );
+    // outprintln(F("FLH > CHKSUM"));
+    // DBUG(result, 2); // just to verify
+}
+
+uint8_t* ti_chk(uint8_t b[], int len) {
+	int sum = 0;
+	for (int i = 4; i < len - 2; i++) {
+		sum += b[i];
+	}
+	int checksum0 = sum % 256;
+	int checksum1 = (sum / 256) & 0xFF;
+
+    // static -> the ONLY way to be sure to return correctly the given array (when converting to pointer)
+    static uint8_t result[2] = { (uint8_t) checksum0, (uint8_t) checksum1 };
+	return result;
 }

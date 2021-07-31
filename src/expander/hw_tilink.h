@@ -8,6 +8,16 @@
 
 #define TI_MODEL_92_OR_V200 1
 
+// ====================
+// But : ONLY SEND_MODE_SERIAL is used for all cases
+// content sent in one-shot mode from RAM
+#define SEND_MODE_RAM    0x01
+// content is streamed from PROGMEM
+#define SEND_MODE_FLASH  0x02
+// content is streamed from Serial Port
+#define SEND_MODE_SERIAL 0x03
+// ====================
+
 // ------ Ti Commands ---------
 #define REQ_SCREENSHOT 0x6D
 #define REQ_BACKUP     0xA2
@@ -35,7 +45,7 @@ int ti_read(long enterTimeout=GET_ENTER_TIMEOUT, long nextTimeout=GET_ENTER_TIME
 // return written bytes nb
 int ti_write(uint8_t* seg, int segLen);
 // return read bytes nb
-int ti_recv(uint8_t* seg, int segMaxLen);
+int ti_recv(uint8_t* seg, int segMaxLen, bool waitLong=false);
 
 bool ti_sendVar(Stream* input);
 bool ti_reqScreen(Stream* output, bool ascii);
@@ -43,6 +53,9 @@ bool ti_reqScreen(Stream* output, bool ascii);
 int ti_sendKeyStrokes(char* data, int len=-1);
 int ti_sendKeyStroke(int data);
 
+uint8_t* ti_chk(uint8_t b[], int len);
+void ti_header(const char* constCharFileName, int fileType, int dataLen, bool silent, int& dtLen, bool send);
+void ti_xdp(char data[], int dataLen, int sendingMode, bool silent, int& dtLen, bool archived, Stream* input, bool inputIsSerial);
 
 // call in loop() -> can recvVar, recvCBL, ....
 // return true if something happend

@@ -54,4 +54,22 @@
 
 #if not MAIN_CODE
   extern Speaker speaker;
+  extern Storage storage;
 #endif
+
+#define SHELL_MODE_TELNET 0x01
+#define SHELL_MODE_SERIAL 0x02
+#define SHELL_MODE_DUMMY  0x03
+
+static bool startsWith(char* strFull, char* strToFind) {
+    if ( strToFind == NULL || strFull == NULL ) { return false; }
+    if ( strlen( strFull ) < strlen( strToFind ) ) { return false; }
+    return strncmp( strFull, strToFind, strlen( strToFind ) ) == 0;
+}
+
+// 0C -> 12
+static int hexStrToInt(char* str) {
+    int hexNumber;
+    sscanf(str, "%02X", &hexNumber);
+    return hexNumber;
+}

@@ -23,6 +23,7 @@ class TiLink : public Stream {
       bool requestScreen(Stream* out, bool asciiMode = false); 
       int sendKeyStrokes(char* data, int len=-1);
       int sendKeyStroke(int data);
+      bool sendVar(char* varName, bool silent=true);
 
       bool handleCalc();
 
