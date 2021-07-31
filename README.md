@@ -1,10 +1,12 @@
 # XtsTiExpander v2
 ## XTase - fgalliat @Jul 2021
 
- - Batt. > ESP32 > VoltageLvl converter > Ti wires
+ - Batt. > ESP32 > Voltage Lvl converter > Ti wires
 
-![TTGO T_DISPLAY screen dump of TiVoyage 200](./pictures/TTGO_displayTI.jpg)
-(My TTGO T_Display is now able to make a Ti ScreenDump w/ ONLY Battery 3.7v as PWR !)
+   | ![TTGO T_DISPLAY screen dump of TiVoyage 200](./pictures/TTGO_displayTI.jpg) | ![screen dump in enclosure](./pictures/enclosure/running.jpg) |
+   | ------------------------------------------------------------ | ------------------------------------------------------------ |
+
+   (My TTGO T_Display is now able to make a Ti ScreenDump w/ ONLY Battery 3.7v as PWR !)
 
 - **Main Features** :
 
