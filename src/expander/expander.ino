@@ -8,6 +8,7 @@
 #include "globals.h"
 
 TiLink tilink;
+Storage storage;
 
 // ================================================
 // Specific ESP32 Timer
@@ -228,6 +229,10 @@ void ttgo_loop()
 void setup() {
     Serial.begin(115200);
 
+    #if TTGO_TDISPLAY
+        setupHardware();
+    #endif
+
     bool setupOk = true;
     bool tilinkOk = tilink.begin(TI_TIP, TI_RING);
     if ( !tilinkOk ) {
@@ -239,14 +244,19 @@ void setup() {
     }
     setupOk &= tilinkOk;
 
+    bool storageSetup = storage.begin();
+    if ( !storageSetup ) {
+        Serial.println("(!!) Storage Setup failed");
+        Serial.println("(!!) Try 'espformater' code");
+    }
+    setupOk &= storageSetup;
+
     if ( !setupOk ) {
         Serial.println("(!!) Setup may be incomplete");
+        #if HAS_DISPLAY
+          tft.println("(!!) Setup may be incomplete");
+        #endif
     }
-
-    #if TTGO_TDISPLAY
-        setupHardware();
-    #endif
-
 
    #if NO_ISR
      setPollMode(false);
@@ -258,18 +268,6 @@ void setup() {
 long lastTime = millis();
 
 void loop() {
-
-   #if HAS_DISPLAY
-    if ( millis() - lastTime > 1000 ) {
-        uint16_t v = analogRead(ADC_PIN);
-        float battery_voltage = ((float)v / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
-
-        scLandscape();
-        scPowerJauge( battery_voltage );
-        scRestore();
-        lastTime = millis();
-    }
-  #endif
 
     // tilink.poll();
 
@@ -305,5 +303,18 @@ void loop() {
         }
         tilink.write(b);
     }
+
+   #if HAS_DISPLAY
+    // Power Jauge
+    if ( millis() - lastTime > 1000 ) {
+        uint16_t v = analogRead(ADC_PIN);
+        float battery_voltage = ((float)v / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
+
+        scLandscape();
+        scPowerJauge( battery_voltage );
+        scRestore();
+        lastTime = millis();
+    }
+  #endif
 
 }
