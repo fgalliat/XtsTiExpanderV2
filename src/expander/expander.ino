@@ -8,6 +8,7 @@
 #include "globals.h"
 
 TiLink tilink;
+Speaker speaker;
 Storage storage;
 
 // ================================================
@@ -157,6 +158,7 @@ void button_init()
         Serial.println("btn press wifi scan");
         // wifi_scan();
         tilink.requestScreen(NULL, true);
+        speaker.tone(440, 50);
     });
 }
 
@@ -228,10 +230,12 @@ void ttgo_loop()
 
 void setup() {
     Serial.begin(115200);
+    speaker.begin();
 
     #if TTGO_TDISPLAY
         setupHardware();
     #endif
+
 
     bool setupOk = true;
     bool tilinkOk = tilink.begin(TI_TIP, TI_RING);

@@ -50,3 +50,8 @@
 #endif
 
 #include "lib_display.h"
+#include "lib_sound.h"
+
+#if not MAIN_CODE
+  extern Speaker speaker;
+#endif
