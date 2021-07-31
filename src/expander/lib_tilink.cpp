@@ -13,6 +13,8 @@
 extern bool isPollMode();
 extern void setPollMode(bool state);
 
+extern void handleTiActionData(uint8_t* segment, int segLen, uint32_t count, uint32_t total);
+
 
 uint8_t inputBuff[INPUT_BUFF_LEN+1];
 int inputBuffCursor = 0;
@@ -384,8 +386,10 @@ bool TiLink::handleCalc() {
         dummyMode();
       }
     } else if ( recvNb == 2 ) { // any other content
-      setPollMode(false); // disable polling
-      delay(ISR_DURATION * 2);
+      if ( isPollMode() ) {
+        setPollMode(false); // disable polling
+        delay(ISR_DURATION * 2);
+      }
 
       #define DBG_CBL 0
 
@@ -430,6 +434,8 @@ bool TiLink::handleCalc() {
       waitAvailable(200);
       recvNb = readBytes( sendHead, head );
 
+      Serial.print("found bytes to read "); Serial.print( recvNb ); Serial.print(" of "); Serial.println( head );
+
       if ( cblSend && ( recvNb <= 0 || sendHead[ 6-1 ] != 0x04 ) ) { // -1 for head len
         Serial.println(F("E:Not CBL packet"));
         debugDatas( sendHead, head );
@@ -451,8 +457,9 @@ bool TiLink::handleCalc() {
         #if ASCII_OUTPUT
           if (!false) Serial.println(F("Send for TiVarSend 2nd step"));
         #endif
-        waitAvailable(200);
-        recvNb = readBytes( sendHead, head );
+        // waitAvailable(200);
+        // recvNb = readBytes( sendHead, head );
+
         // -> 8 0 0 0 = could be the var size LSB -> MSB (A + (B * 256) + (C * 65536) + ... ) WITH +2 for CHK
         // C = var Type : String
         // 1 = name len => 
@@ -469,6 +476,12 @@ bool TiLink::handleCalc() {
 
         uint8_t varType = sendHead[5]; // 0C -> STR
         uint32_t varLength = sendHead[1] + ( sendHead[2] << 8 ) + ( sendHead[3] << 16 ) + ( sendHead[4] << 24 );
+
+        bool isSpeVarForHandle = false;
+        if ( strncmp(varName, "tiaction", 8) == 0 ) {
+          // except varType 0x0C -> String var
+          isSpeVarForHandle = true;
+        }
 
         #if HAS_DISPLAY
           int rot = tft.getRotation();
@@ -509,7 +522,9 @@ bool TiLink::handleCalc() {
         memset( TMP_RAM, 0x00, prePacketLen );
 
         //recvNb = readBytes( TMP_RAM, prePacketLen, true ); // ,true -> waits for big variables (ex. popbin.ppg -> 24716 bytes long) [FIX]
-        if ( !isPollMode() ) { delay(500); }
+        if ( !isPollMode() ) { 
+          // delay(500); 
+        }
         else { waitAvailable(5000); }
         recvNb = readBytes( TMP_RAM, prePacketLen);
         
@@ -573,6 +588,11 @@ bool TiLink::handleCalc() {
             while( Serial.available() == 0 ) { delay(2); }
             Serial.read(); // waits an handshake
           #endif
+
+          if (isSpeVarForHandle) {
+            handleTiActionData( TMP_RAM, usedPacketLen, total, varLength );
+          }
+
           total += usedPacketLen;
         }
 
@@ -600,6 +620,7 @@ bool TiLink::handleCalc() {
         #else
           Serial.print(F(OUT_BIN_SENDVAR_EOF));
         #endif
+
 
       } // end of VarSend2
 

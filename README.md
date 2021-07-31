@@ -14,10 +14,10 @@
 - [x] Var Upload
 - [ ] Var Download
 - [x] Screen dump
-- [ ] SPIFFS
-- [ ] Buzzer
+- [~] SPIFFS
+- [x] Buzzer
 - [ ] WiFi
-- [ ] 'tiaction' spe Var handle
+- [~] 'tiaction' spe Var handle
 
 
 
@@ -25,7 +25,6 @@
  - [x] connect & send/receive bytes to Ti Voyage 200
 
  - [~] SerialTerm to V200
-   
    - [~] Dummy mode
    - [~] CBL Keyb mode
    - [x] Raw
@@ -37,7 +36,9 @@
    - [~] readAsCBL <- Ti
    - [x] receiveVar <- Ti
    
- - [ ] install hiLevel protocol
-   - [ ] actionVar receive ..
+ - [~] install hiLevel protocol
+   - [~] actionVar receive (wip for longer than 64 data)
+   - [x] play asBasica music String
+   - [ ] start WiFi ...
 
    /!\\ (recvNb == 0) -> no more : (recvNb == nbSent)

@@ -279,7 +279,8 @@ bool ti_reqScreen(Stream* output, bool ascii) {
 			for (int j = 7; j >= 0; j--) {
 				if (screen[i] & (1 << j)) {
 					#if HAS_DISPLAY
-					  if ( yy < tft.height() ) { tft.drawPixel( xx, yy, ti_fgColor ); }
+					  // +7 => ti 128px / T_DISPLAY 135px height
+					  if ( yy < tft.height() ) { tft.drawPixel( xx, yy+7, ti_fgColor ); }
 					#endif
 					if (output != NULL) output->write('#');
 				} else {

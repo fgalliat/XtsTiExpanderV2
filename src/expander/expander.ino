@@ -226,7 +226,37 @@ void ttgo_loop()
 
 #endif
 
+// =========== HiLevel ti handle ==========
+void tiAction(char* request);
 
+void handleTiActionData(uint8_t* segment, int segLen, uint32_t count, uint32_t total) {
+    // now : segLen is 64 max
+    if ( count > 0 ) {
+        // FIXME : ignore > to 64 tiaction
+        return;
+    }
+
+    // 0x00 <content> 0x00 .....
+    char* value = (char*)&segment[1];
+    int len = strlen(value);
+    if ( len <= 0 ) {
+        // beware when multipacket -> will not contains trailling 0x00 in this packet...
+        return;
+    }
+
+    tiAction(value);
+}
+
+void tiAction(char* action) {
+  if ( strncmp("play:", action, 5) == 0 ) {
+      char* tune = &action[5];
+      speaker.playTuneString( tune );
+  } else {
+      Serial.println("Unknown action");
+  }
+}
+
+// ============= Arduino ================
 
 void setup() {
     Serial.begin(115200);
@@ -313,6 +343,7 @@ void loop() {
     if ( millis() - lastTime > 1000 ) {
         uint16_t v = analogRead(ADC_PIN);
         float battery_voltage = ((float)v / 4095.0) * 2.0 * 3.3 * (vref / 1000.0);
+        if (battery_voltage > 5.0) { battery_voltage = 5.0; }
 
         scLandscape();
         scPowerJauge( battery_voltage );
