@@ -112,20 +112,20 @@ char** Storage::lsToArray(int& size, bool sort) {
             char* nn = (char*)malloc( (12+1) ); // beware of RAM
             sprintf(nn, "%s", &entryName[from]);
             cur = createListEntry( nn, cur);
-            Serial.println( cur->value );
+            // Serial.println( cur->value );
          }
       }
       file = root.openNextFile();
    }
    char** ret = l_toArray( l_getFirst(cur), size);
    if (cur != NULL) l_free(cur);
-   for(int i=0; i < size; i++) {
-      Serial.print('>');Serial.println(ret[i]);
-   }
+   // for(int i=0; i < size; i++) {
+   //    Serial.print('>');Serial.println(ret[i]);
+   // }
    if ( size > 0 && sort ) { a_quickSort(ret, 0, size-1); }
-   for(int i=0; i < size; i++) {
-      Serial.print('<');Serial.println(ret[i]);
-   }
+   // for(int i=0; i < size; i++) {
+   //    Serial.print('<');Serial.println(ret[i]);
+   // }
    return ret;
 }
 
