@@ -81,23 +81,19 @@ void Storage::lsToStream(Stream* client, int shellMode) {
    client->println( "-EOL-" );
 }
 
-void Storage::lsToScreen() {
-   scLandscape();
-   scCls();
-
+char** Storage::lsToArray(int& size, bool sort) {
    if ( !storage_ready ) {
-      tft.println("No FileSystem mounted");
-      return;
+      return NULL;
    }
 
    File root = SPIFFS.open("/");
    if(!root){
-      tft.println("− failed to open directory");
-      return;
+      return NULL;
    }
    int cpt = 0;
    int xx = 0;
    File file = root.openNextFile();
+   LList* cur = NULL;
    while(file){
       if(file.isDirectory()){
          // .. never appens on SPIFFS
@@ -107,21 +103,69 @@ void Storage::lsToScreen() {
 
          // list only TiVars
          if ( startsWith( entryName, TIVAR_DIR ) ) {
-            tft.setCursor(xx, 7+(cpt*8));
-            tft.println( &entryName[from] );
-            // client->print(" (");
-            // client->print(file.size());
-            // client->println(")");
-            cpt++;
-            if ( cpt >= 128 / 8 ) {
-               cpt = 0;
-               xx += 72; // 12 * 6
-            }
+            // that makes garbage because of string provenance ? 
+            // cur = createListEntry( &entryName[from], cur);
+            
+            // always keep last ..
+            // char nn[12+1]; memset(nn, 0x00, 12);
+
+            char* nn = (char*)malloc( (12+1) ); // beware of RAM
+            sprintf(nn, "%s", &entryName[from]);
+            cur = createListEntry( nn, cur);
+            Serial.println( cur->value );
          }
       }
       file = root.openNextFile();
    }
+   char** ret = l_toArray( l_getFirst(cur), size);
+   if (cur != NULL) l_free(cur);
+   for(int i=0; i < size; i++) {
+      Serial.print('>');Serial.println(ret[i]);
+   }
+   if ( size > 0 && sort ) { a_quickSort(ret, 0, size-1); }
+   for(int i=0; i < size; i++) {
+      Serial.print('<');Serial.println(ret[i]);
+   }
+   return ret;
+}
+
+void Storage::lsToScreen() {
+   scLandscape();
+   scCls();
+
+   if ( !storage_ready ) {
+      tft.println("No FileSystem mounted");
+      scRestore();
+      return;
+   }
+
+   int nbEntries = 0;
+   char** entries = lsToArray(nbEntries, true);
+
+   Serial.print( nbEntries ); Serial.println(" found entries");
+
+   if(nbEntries <= 0){
+      tft.println("− Empty -");
+      scRestore();
+      return;
+   }
+   int cpt = 0;
+   int xx = 0;
+   
+   for(int i=0; i < nbEntries; i++){
+      tft.setCursor(xx, 7+(cpt*8));
+      tft.println( entries[i] );
+      cpt++;
+      if ( cpt >= 128 / 8 ) {
+         cpt = 0;
+         xx += 72; // 12 * 6
+      }
+   }
    tft.println( "-EOL-" );
+
+   if (entries != NULL) {
+      free(entries);
+   }
 
    scRestore();
 }

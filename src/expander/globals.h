@@ -14,6 +14,8 @@
 // because requires ~16ms max to read a byte from TI
 #define ISR_DURATION 20
 
+#include "utils.h"
+
 #include "lib_network.h"
 #include "lib_storage.h"
 #include "lib_tilink.h"

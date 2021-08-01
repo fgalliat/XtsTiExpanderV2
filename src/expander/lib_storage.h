@@ -26,6 +26,7 @@ class Storage {
       // void readFile(fs::FS &fs, const char * path, Stream* output);
 
       void lsToStream(Stream* client, int shellMode);
+      char** lsToArray(int& size, bool sort);
       void lsToScreen();
 
       // TiVar specific
