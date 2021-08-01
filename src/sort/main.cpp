@@ -32,16 +32,24 @@ void listEntries(LList* entry) {
     listEntries(entry->next);
 }
 
-// entry <= other
+// entry < other
+bool s_isLessThan(char* entry, char* other) {
+    if ( other == NULL ) { return false; }
+    // int minLen = min( strlen(entry), strlen(other) );
+    // for(int i=0; i < minLen; i++) {
+    //     if ( entry[i] < other[i] ) {
+    //         continue;
+    //     }
+    //     return false;
+    // }
+    return strcmp(entry, other) < 0;
+    return true;
+}
+
+// entry < other
 bool l_isLessThan(LList* entry, LList* other) {
     if ( other == NULL ) { return false; }
-    int minLen = min( strlen(entry->value), strlen(other->value) );
-    for(int i=0; i < minLen; i++) {
-        if ( other->value[i] < entry->value[i] ) {
-            return false;
-        }
-    }
-    return true;
+    return s_isLessThan(entry->value, other->value);
 }
 
 int l_size(LList* entry, int cpt=0) {
@@ -124,6 +132,62 @@ LList* l_getFirst(LList* entry) {
     return cur;
 }
 
+void l_free(LList* entry) {
+    // FIXME : impl.
+}
+
+char** l_toArray(LList* entry) {
+    if ( entry == NULL ) { return NULL; }
+    LList* cur = entry;
+    int size = l_size(entry);
+    char** ret = (char**)malloc( size * sizeof(char*) );
+    for(int i=0; i < size; i++) {
+        ret[i] = cur->value;
+        cur = cur->next;
+    }
+    return ret;
+}
+
+// ====================
+void a_swap(char* tableau[], int a, int b) {
+    char* temp = tableau[a];
+    tableau[a] = tableau[b];
+    tableau[b] = temp;
+}
+
+void a_quickSort(char* tableau[], int debut, int fin) {
+    int gauche = debut-1;
+    int droite = fin+1;
+    char* pivot = tableau[debut];
+    // printf("pivot[%s]\n", pivot);
+
+    /* Si le tableau est de longueur nulle, il n'y a rien à faire. */
+    if(debut >= fin)
+        return;
+
+    /* Sinon, on parcourt le tableau, une fois de droite à gauche, et une
+       autre de gauche à droite, à la recherche d'éléments mal placés,
+       que l'on permute. Si les deux parcours se croisent, on arrête. */
+    while(1) {
+        // do droite--; while(tableau[droite] > pivot);
+        // do gauche++; while(tableau[gauche] < pivot);
+        do droite--; while(s_isLessThan( pivot, tableau[droite] ));
+        do gauche++; while(s_isLessThan( tableau[gauche], pivot ));
+
+        if(gauche < droite)
+            a_swap(tableau, gauche, droite);
+        else break;
+    }
+
+    // printf("droite[%d]\n", droite);
+
+    /* Maintenant, tous les éléments inférieurs au pivot sont avant ceux
+       supérieurs au pivot. On a donc deux groupes de cases à trier. On utilise
+       pour cela... la méthode quickSort elle-même ! */
+    a_quickSort(tableau, debut, droite);
+    a_quickSort(tableau, droite+1, fin);
+}
+
 // =====================================================================
 
 int main(int argc, char** argv) {
@@ -157,6 +221,19 @@ int main(int argc, char** argv) {
     printf("*-========-* \n");
     l_swap(v3, v1);
     listEntries(l_getFirst(v3));
+
+    int size = l_size(l_getFirst(v0));
+    char** array = l_toArray(l_getFirst(v0));
+    for(int i=0; i < size; i++) {
+        printf("> %s\n", array[i]);
+    }
+
+    a_quickSort(array, 0, size-1);
+
+    printf("*-===ST===-* \n");
+    for(int i=0; i < size; i++) {
+        printf("> %s\n", array[i]);
+    }
 
     return 0;
 }
