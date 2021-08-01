@@ -12,7 +12,7 @@
 
 - [x] PWR on Batt
 - [x] Var Upload
-- [~] Var Download
+- [x] Var Download
 - [x] Screen dump
 - [X] SPIFFS
 - [x] Buzzer
@@ -32,7 +32,7 @@
  - [ ] install minimal TI protocol
    - [x] requestScreen (try 1st w/ ISR mode -> seems to work)
    - [x] send KeyStrokes
-   - [~] sendVar -> Ti
+   - [x] sendVar -> Ti
    - [~] readAsCBL <- Ti
    - [x] receiveVar <- Ti
    
