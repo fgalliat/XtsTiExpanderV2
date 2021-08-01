@@ -81,6 +81,51 @@ void Storage::lsToStream(Stream* client, int shellMode) {
    client->println( "-EOL-" );
 }
 
+void Storage::lsToScreen() {
+   scLandscape();
+   scCls();
+
+   if ( !storage_ready ) {
+      tft.println("No FileSystem mounted");
+      return;
+   }
+
+   File root = SPIFFS.open("/");
+   if(!root){
+      tft.println("− failed to open directory");
+      return;
+   }
+   int cpt = 0;
+   int xx = 0;
+   File file = root.openNextFile();
+   while(file){
+      if(file.isDirectory()){
+         // .. never appens on SPIFFS
+      } else {
+         char* entryName = (char*)file.name();
+         int from = strlen(TIVAR_DIR);
+
+         // list only TiVars
+         if ( startsWith( entryName, TIVAR_DIR ) ) {
+            tft.setCursor(xx, 7+(cpt*8));
+            tft.println( &entryName[from] );
+            // client->print(" (");
+            // client->print(file.size());
+            // client->println(")");
+            cpt++;
+            if ( cpt >= 128 / 8 ) {
+               cpt = 0;
+               xx += 72; // 12 * 6
+            }
+         }
+      }
+      file = root.openNextFile();
+   }
+   tft.println( "-EOL-" );
+
+   scRestore();
+}
+
 File Storage::createTiFile(const char * varName, uint8_t varType, int &error) {
   //  if ( !storage_ready ) {
   //     Serial.println("No FileSystem mounted");

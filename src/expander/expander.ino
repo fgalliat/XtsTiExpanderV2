@@ -262,6 +262,11 @@ void tiAction(char* action) {
   } else if ( strncmp("get:", action, 4) == 0 ) {
       char* varName = &action[4];
       tilink.sendVar( varName );
+  } else if ( strncmp("list:", action, 5) == 0 ) {
+      char* filter = &action[5]; // unused for now
+      #if HAS_DISPLAY
+        storage.lsToScreen();
+      #endif
   } else {
       Serial.println("Unknown action");
   }
@@ -307,6 +312,10 @@ void setup() {
      setPollMode(false);
    #else
      installISR(ISR_DURATION); // need 16ms to read a byte
+   #endif
+
+   #if HAS_DISPLAY
+     storage.lsToScreen();
    #endif
 }
 
