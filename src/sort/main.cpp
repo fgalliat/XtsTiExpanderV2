@@ -44,19 +44,43 @@ int l_size(LList* entry, int cpt=0) {
   return l_size( entry->next, cpt );
 }
 
-void l_insertBefore(LList* entry, LList* beforeThat) {
-  // FIXME : check that code ...
-  if ( entry->prev != NULL ) {
-      entry->prev->next = entry->next;
+bool l_remove(LList* entry) {
+    if ( entry->prev == NULL && entry->next == NULL ) {
+        return false;
+    }
+
+    if (entry->prev != NULL) {
+        entry->prev->next = entry->next;
+    }
+
+    if ( entry->next = NULL) {
+        entry->next->prev = entry->prev;
+    }
+
+    entry->prev = NULL;
+    entry->next = NULL;
+    return true;
+}
+
+
+bool l_insertBefore(LList* entry, LList* beforeThat) {
+  if ( entry->next == beforeThat ) {
+      return false;
   }
-  if ( entry->next != NULL ) {
-      //if ( entry->prev != NULL ) {
-          entry->next->prev = entry->prev;
-      //}
+  l_remove( entry );
+
+  if ( beforeThat != NULL ) { 
+      entry->prev = beforeThat->prev;
+      beforeThat->prev = entry; 
+      // beforeThat->next = entry->next;
   }
   entry->next = beforeThat;
-  if ( beforeThat != NULL ) { beforeThat->next = entry; }
+  return true;
 }
+
+// void l_swap(LList* entry, LList* beforeThat) {
+
+// }
 
 void l_sort(LList* entry) {
     // FIXME
@@ -96,9 +120,15 @@ int main(int argc, char** argv) {
 
     printf("Size : %d \n", l_size(v0));
 
-    l_sort(v0);
+    //l_sort(v0);
+
+    // l_insertBefore(v3, v0); // works
+    // l_insertBefore(v2, v1); // v2 disapears
+    l_remove(v0);
+    l_remove(v1);
+
     printf("*-========-* \n");
-    listEntries(l_getFirst(v0));
+    listEntries(l_getFirst(v3));
 
     return 0;
 }
