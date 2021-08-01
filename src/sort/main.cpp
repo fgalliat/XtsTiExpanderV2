@@ -88,9 +88,18 @@ bool l_insertBefore(LList* entry, LList* beforeThat) {
   return true;
 }
 
-// void l_swap(LList* entry, LList* beforeThat) {
-
-// }
+void l_swap(LList* entry, LList* other) {
+    LList* swPrev = entry->prev;
+    LList* swNext = entry->next;
+    entry->prev = other->prev;
+    if ( entry->prev != NULL ) { entry->prev->next = entry; }
+    entry->next = other->next;
+    if ( entry->next != NULL ) { entry->next->prev = entry; }
+    other->prev = swPrev;
+    if ( other->prev != NULL ) { other->prev->next = other; }
+    other->next = swNext;
+    if ( other->next != NULL ) { other->next->prev = other; }
+}
 
 void l_sort(LList* entry) {
     // FIXME
@@ -142,12 +151,12 @@ int main(int argc, char** argv) {
     l_insertBefore(v2, v1); // works
     // l_remove(v0);
 
-    // printf("*-========-* \n");
-    // listEntries(v0);
-
     printf("*-========-* \n");
     listEntries(l_getFirst(v3));
-    // listEntries(v1);
+
+    printf("*-========-* \n");
+    l_swap(v3, v1);
+    listEntries(l_getFirst(v3));
 
     return 0;
 }
