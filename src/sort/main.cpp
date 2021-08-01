@@ -13,7 +13,8 @@ typedef struct LList {
 LList* createListEntry(char* value, LList* prev=NULL) {
     LList* v0 = (LList*)malloc( 1 * sizeof( LList ) );
     v0->value = (char*)value;
-    v0->prev=prev;
+    v0->prev = prev;
+    v0->next = NULL;
     if ( prev != NULL ) {
         prev->next = v0;
     }
@@ -125,7 +126,7 @@ int main(int argc, char** argv) {
     // l_insertBefore(v3, v0); // works
     // l_insertBefore(v2, v1); // v2 disapears
     l_remove(v0);
-    l_remove(v1);
+    // l_remove(v1);
 
     printf("*-========-* \n");
     listEntries(l_getFirst(v3));
