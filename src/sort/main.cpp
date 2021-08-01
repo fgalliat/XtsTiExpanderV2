@@ -21,14 +21,19 @@ LList* createListEntry(char* value, LList* prev=NULL) {
     return v0;
 }
 
+void l_print(LList* entry) {
+    printf("%s -> [%s] -> %s \n", (entry->prev == NULL ? "NULL":entry->prev->value), entry->value, (entry->next == NULL ? "NULL":entry->next->value));
+}
+
 void listEntries(LList* entry) {
     if ( entry == NULL ) { return; }
-    printf("%s \n", entry->value);
+    // printf("%s \n", entry->value);
+    l_print( entry );
     listEntries(entry->next);
 }
 
-// entry < other
-bool l_isBefore(LList* entry, LList* other) {
+// entry <= other
+bool l_isLessThan(LList* entry, LList* other) {
     if ( other == NULL ) { return false; }
     int minLen = min( strlen(entry->value), strlen(other->value) );
     for(int i=0; i < minLen; i++) {
@@ -51,10 +56,12 @@ bool l_remove(LList* entry) {
     }
 
     if (entry->prev != NULL) {
+        // printf("remove from prev\n");
         entry->prev->next = entry->next;
     }
 
-    if ( entry->next = NULL) {
+    if ( entry->next != NULL) {
+        // printf("remove from next\n");
         entry->next->prev = entry->prev;
     }
 
@@ -69,13 +76,15 @@ bool l_insertBefore(LList* entry, LList* beforeThat) {
       return false;
   }
   l_remove( entry );
+  entry->next = beforeThat;
 
   if ( beforeThat != NULL ) { 
       entry->prev = beforeThat->prev;
+      if ( entry->prev != NULL ) {
+          entry->prev->next = entry;
+      }
       beforeThat->prev = entry; 
-      // beforeThat->next = entry->next;
   }
-  entry->next = beforeThat;
   return true;
 }
 
@@ -89,7 +98,7 @@ void l_sort(LList* entry) {
     int size = l_size( entry );
     for(int i=0; i < size; i++) {
         if ( next == NULL ) { break; }
-        while( l_isBefore( next, next->prev ) ) {
+        while( l_isLessThan( next, next->prev ) ) {
             l_insertBefore(next, next->prev);
         }
         next = next->next;
@@ -111,10 +120,16 @@ LList* l_getFirst(LList* entry) {
 int main(int argc, char** argv) {
     printf("Coucou \n");
 
-    LList* v0 = createListEntry((char*)"menu.12");
-    LList* v1 = createListEntry((char*)"moondat.1C", v0);
-    LList* v2 = createListEntry((char*)"moon.C", v1);
-    LList* v3 = createListEntry((char*)"abc.12", v2);
+    // LList* v0 = createListEntry((char*)"menu.12");
+    // LList* v1 = createListEntry((char*)"moondat.1C", v0);
+    // LList* v2 = createListEntry((char*)"moon.C", v1);
+    // LList* v3 = createListEntry((char*)"abc.12", v2);
+
+    LList* v0 = createListEntry((char*)"v0");
+    LList* v1 = createListEntry((char*)"v1", v0);
+    LList* v2 = createListEntry((char*)"v2", v1);
+    LList* v3 = createListEntry((char*)"v3", v2);
+
 
     printf("*-========-* \n");
     listEntries(v0);
@@ -123,13 +138,16 @@ int main(int argc, char** argv) {
 
     //l_sort(v0);
 
-    // l_insertBefore(v3, v0); // works
-    // l_insertBefore(v2, v1); // v2 disapears
-    l_remove(v0);
-    // l_remove(v1);
+    l_insertBefore(v3, v0); // works
+    l_insertBefore(v2, v1); // works
+    // l_remove(v0);
+
+    // printf("*-========-* \n");
+    // listEntries(v0);
 
     printf("*-========-* \n");
     listEntries(l_getFirst(v3));
+    // listEntries(v1);
 
     return 0;
 }
