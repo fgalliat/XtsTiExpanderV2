@@ -532,6 +532,14 @@ if (inputIsSerial) {
           sum += D[j];	
         } 
         ti_write( D, e);
+
+		#if HAS_DISPLAY
+		    int percent = ( 100 * i / dataLen );
+			scLandscape();
+			scLowerJauge( 100 );
+			scRestore();
+		#endif
+
       }
       //delay( DEFAULT_POST_DELAY/2 );
     } else {

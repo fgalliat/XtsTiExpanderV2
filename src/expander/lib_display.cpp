@@ -24,6 +24,7 @@ void scRestore() {
 }
 
 void scLowerJauge(int percent) {
+    if ( percent > 100 ) { percent = 100; }
     int xx = 20; // (240 - 2 * 100 ) / 2
     int yy = 100;
     int ww = percent * 2;
@@ -45,12 +46,13 @@ long voltsToLong(float v) {
 
 void scPowerJauge(float voltage) {
   int percent = (int)map( voltsToLong(voltage), voltsToLong(3.0), voltsToLong(5.0), 0, 100 );
+  if ( percent > 100 ) { percent = 100; }
 
   int wMax = 30;
   int www = wMax + 2 + 2;
   int ww = 100 * percent / wMax;
   int xx = 240 - www - 5;
-  int yy = 10;
+  int yy = 0;
   int hh = 2;
   int hhh = hh + 2 + 2;
 
