@@ -790,9 +790,12 @@ bool TiLink::sendVar(char* varName, bool silent) {
 
   bool savedMode = isPollMode();
   setPollMode(false);
+  delay(ISR_DURATION * 2);
+  resetLines();
 
   long fileSize = f.size();
   long varSize = fileSize-2; // w/o chkLen
+  //long varSize = fileSize;
 
   int nlength = strlen( filename );
   char* strVarType = &filename[ nlength - 2 ];
@@ -816,50 +819,56 @@ bool TiLink::sendVar(char* varName, bool silent) {
 
   #if HAS_DISPLAY
     scLandscape();
-    scCls();
-    scLowerJauge( 100 );
+    scLowerJauge( 0 );
     scRestore();
   #endif
 
   // == RTS ==
   int len = 0;
-  ti_header(filename, varType, dataLen, silent, len, true);
+  if ( !false ) { Serial.println("ti_header"); }
+  ti_header(varName, varType, dataLen, silent, len, true);
   delay(DEFAULT_POST_DELAY);
 
   uint8_t recv[4];
   
   // == ACK ==
+  if ( !false ) { Serial.println("wait ACK"); }
   ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK")); return -1; }
   
   // == CTS ==
+  if ( !false ) { Serial.println("wait CTS"); }
   ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read CTS")); return -1; }
   
   // == ACK ==
   uint8_t B[4] = { 0x09, 0x56, 0x00, 0x00 };
+  if ( !false ) { Serial.println("send ACK"); }
   ti_write(B, 4);
   delay(DEFAULT_POST_DELAY/2);
   
   // == XDP == 
   bool archived = false;
   int sendingMode = SEND_MODE_SERIAL;
+  if ( !false ) { Serial.println("ti_xdp"); }
   ti_xdp(data, dataLen, sendingMode, silent, len, archived, &f, false);
   delay(DEFAULT_POST_DELAY/2);
   
   // == ACK ==
+  if ( !false ) { Serial.println("wait ACK"); }
   ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK (2)")); return -1; }
   
   // == EOT ==
   uint8_t D[4] = { 0x09, 0x92, 0x00, 0x00 };
+  if ( !false ) { Serial.println("send EOT"); }
   ti_write(D, 4);
   delay(DEFAULT_POST_DELAY/2);  
   
   // ACK ==
+  if ( !false ) { Serial.println("wait ACK"); }
   ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK (3)")); return -1; }
 
   Serial.println(F("I:Var sent"));
   #if HAS_DISPLAY
     scLandscape();
-    scCls();
     scLowerJauge( 100 );
     scRestore();
   #endif

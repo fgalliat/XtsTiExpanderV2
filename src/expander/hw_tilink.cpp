@@ -355,10 +355,10 @@ bool ti_handle() {
 }
 
 // ============================================
-void ti_header(const char* constCharFileName, int fileType, int dataLen, bool silent, int& dtLen, bool send) {
+void ti_header(const char* varName, int fileType, int dataLen, bool silent, int& dtLen, bool send) {
 	int i;
 
-	int nameLength = strlen(constCharFileName);
+	int nameLength = strlen(varName);
 	// packLen = 4 bytes for dataLen
 	// + 1 for dataType
 	// + 1 for fileName.length
@@ -401,7 +401,7 @@ void ti_header(const char* constCharFileName, int fileType, int dataLen, bool si
 
 	// file name
 	for (i = 0; i < nameLength; i++) {
-		result[10 + i] = constCharFileName[i];
+		result[10 + i] = varName[i];
 	}
 	// zero-terminated
 	result[10 + nameLength] = (char) 0;
@@ -417,7 +417,8 @@ void ti_header(const char* constCharFileName, int fileType, int dataLen, bool si
     dtLen = finalLen;
 
     if (send) {
-       ti_write(result, finalLen);
+       int sent = ti_write(result, finalLen);
+	   if (!false) { Serial.print("ti_header sent = "); Serial.println(sent); }
     }
 }
 

@@ -347,6 +347,8 @@ void loop() {
             tilink.sendKeyStrokes( "Hello world !" );
         } else if ( b == 0x05 ) { // Ctrl-E
             storage.lsToStream(&Serial, SHELL_MODE_SERIAL);
+        } else if ( b == 0x06 ) { // Ctrl-F
+            tilink.sendVar("keyb");
         } else {
             tilink.write(b);
         }
