@@ -132,8 +132,24 @@ LList* l_getFirst(LList* entry) {
     return cur;
 }
 
+LList* l_getLast(LList* entry) {
+    if ( entry == NULL ) { return NULL; }
+    if ( entry->next == NULL ) { return entry; }
+    LList* cur = entry;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    return cur;
+}
+
 void l_free(LList* entry) {
-    // FIXME : impl.
+    if ( entry == NULL ) { return; }
+    LList* cur = l_getLast(entry);
+    while (cur != NULL) {
+        LList* p = cur->prev;
+        free(cur);
+        cur = p;
+    }
 }
 
 char** l_toArray(LList* entry) {
@@ -224,6 +240,9 @@ int main(int argc, char** argv) {
 
     int size = l_size(l_getFirst(v0));
     char** array = l_toArray(l_getFirst(v0));
+
+    l_free(l_getFirst(v0));
+
     for(int i=0; i < size; i++) {
         printf("> %s\n", array[i]);
     }
@@ -234,6 +253,8 @@ int main(int argc, char** argv) {
     for(int i=0; i < size; i++) {
         printf("> %s\n", array[i]);
     }
+
+    free(array);
 
     return 0;
 }
