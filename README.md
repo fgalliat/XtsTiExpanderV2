@@ -16,7 +16,7 @@
  - [x] Screen dump
  - [X] SPIFFS
  - [x] Buzzer
- - [ ] WiFi
+ - [x] WiFi
  - [~] 'tiaction' spe Var handle
 
 
@@ -38,7 +38,7 @@
  - [~] install hiLevel protocol
    - [~] actionVar receive (wip for longer than 64 data)
    - [x] play asBasica music String
-   - [ ] start WiFi ...
+   - [x] start WiFi ...
 
    /!\\ (recvNb == 0) -> no more : (recvNb == nbSent)
 
@@ -48,5 +48,5 @@
   - [ ] cat a var
   - [ ] cat a conf
   - [x] add WiFi conf
-  - [ ] start / stop WiFi
+  - [x] start / stop WiFi
   - [x] screen dump

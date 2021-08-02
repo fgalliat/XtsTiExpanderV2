@@ -151,19 +151,38 @@ bool Shell::handle(char* cmdline) {
     } else if ( strncmp(cmdline, "halt", 4) == 0 ) {
         shutdown();
         return true;
+    } else if ( strncmp(cmdline, "wifistart", 9) == 0 ) {
+        netw.start();
+    } else if ( strncmp(cmdline, "wifistop", 8) == 0 ) {
+        netw.stop();
+    } else if ( strncmp(cmdline, "wifidel", 7) == 0 ) {
+        curClient->print("Sure to erase WiFi config ? ");
+        char* resp = readLine(true);
+        if ( resp != NULL && strncmp(resp, "y", 1) == 0 ) {
+            resetCurLine();
+            netw.eraseConfig();
+            curClient->println("Erased");
+            return true;
+        }
+        resetCurLine();
+        return false;
     } else if ( strncmp(cmdline, "wifipsk", 7) == 0 ) {
         curClient->print("New SSID ? ");
-        char* newSSID = readLine(true);
-        if ( newSSID == NULL || strlen( newSSID ) == 0 ) {
+        char* resp = readLine(true);
+        if ( resp == NULL || strlen( resp ) == 0 ) {
+            resetCurLine();
             curClient->print("Abord...");
             return false;
         }
+        char newSSID[64+1]; sprintf(newSSID, "%s", resp);
         curClient->print("New PSK ? ");
-        char* newPSK = readLine(true);
-        if ( newPSK == NULL ) {
+        resp = readLine(true);
+        if ( resp == NULL ) {
+            resetCurLine();
             curClient->print("Abord...");
             return false;
         }
+        char newPSK[64+1]; sprintf(newPSK, "%s", resp);
         resetCurLine();
 
         bool ok = netw.addConfig(newSSID, newPSK);

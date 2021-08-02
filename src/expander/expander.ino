@@ -274,6 +274,23 @@ void tiAction(char* action) {
       #if HAS_DISPLAY
         storage.lsToScreen();
       #endif
+  } else if ( strncmp("wifi:start", action, 10) == 0 ) {
+      #if HAS_DISPLAY
+        scLandscape();
+        scCls();
+        tft.println( "Wifi connect" );
+        tft.println( "" );
+        scRestore();
+      #endif
+      netw.start();
+      #if HAS_DISPLAY
+        scLandscape();
+        tft.println( netw.getIP() );
+        tft.println( netw.getNetname() );
+        scRestore();
+      #endif
+  } else if ( strncmp("wifi:stop", action, 9) == 0 ) {
+      netw.stop();
   } else {
       Serial.println("Unknown action");
   }
@@ -354,6 +371,7 @@ void loop() {
     tilink.handleCalc();
 #endif
 
+    netw.loop();
     shell.loop();
 
     if ( Serial.available() ) {
