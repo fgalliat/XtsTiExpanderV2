@@ -10,18 +10,17 @@
 
 - **Main Features** :
 
-- [x] PWR on Batt
-- [x] Var Upload
-- [x] Var Download
-- [x] Screen dump
-- [X] SPIFFS
-- [x] Buzzer
-- [ ] WiFi
-- [~] 'tiaction' spe Var handle
+ - [x] PWR on Batt
+ - [x] Var Upload
+ - [x] Var Download
+ - [x] Screen dump
+ - [X] SPIFFS
+ - [x] Buzzer
+ - [ ] WiFi
+ - [~] 'tiaction' spe Var handle
 
 
-
-
+- **Sub Features** :
  - [x] connect & send/receive bytes to Ti Voyage 200
 
  - [~] SerialTerm to V200

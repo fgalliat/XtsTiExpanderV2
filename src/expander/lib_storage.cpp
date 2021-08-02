@@ -175,9 +175,10 @@ void Storage::lsToScreen() {
          xx += 72; // 12 * 6
       }
    }
-   tft.setCursor(xx, 7+(cpt*8));
+   tft.setCursor(0, 135-8);
    int freeSpace = (int)( diskFree() / 1024 );
-   tft.print( "-EOL- " ); tft.print(freeSpace); tft.print( " KB free" );
+   int totalSpace = (int)( diskSpace() / 1024 );
+   tft.print( "-EOL- " ); tft.print(freeSpace); tft.print( " KB free on " ); tft.print( totalSpace ); tft.print( " KB" );
 
    if (entries != NULL) {
       free(entries);
