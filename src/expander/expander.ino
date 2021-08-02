@@ -10,6 +10,7 @@
 TiLink tilink;
 Speaker speaker;
 Storage storage;
+Shell shell;
 
 // ================================================
 // Specific ESP32 Timer
@@ -127,6 +128,20 @@ void showVoltage()
     }
 }
 
+void shutdown() {
+    int r = digitalRead(TFT_BL);
+    digitalWrite(TFT_BL, !r);
+
+    tft.writecommand(TFT_DISPOFF);
+    tft.writecommand(TFT_SLPIN);
+    //After using light sleep, you need to disable timer wake, because here use external IO port to wake up
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
+    // esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0);
+    delay(200);
+    esp_deep_sleep_start();
+}
+
 void button_init()
 {
     btn1.setLongClickHandler([](Button2 & b) {
@@ -137,16 +152,7 @@ void button_init()
         tft.setTextDatum(MC_DATUM);
         tft.drawString("Press again to wake up",  tft.width() / 2, tft.height() / 2 );
         espDelay(6000);
-        digitalWrite(TFT_BL, !r);
-
-        tft.writecommand(TFT_DISPOFF);
-        tft.writecommand(TFT_SLPIN);
-        //After using light sleep, you need to disable timer wake, because here use external IO port to wake up
-        esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
-        // esp_sleep_enable_ext1_wakeup(GPIO_SEL_35, ESP_EXT1_WAKEUP_ALL_LOW);
-        esp_sleep_enable_ext0_wakeup(GPIO_NUM_35, 0);
-        delay(200);
-        esp_deep_sleep_start();
+        shutdown();
     });
     btn1.setPressedHandler([](Button2 & b) {
         Serial.println("Detect Voltage..");
@@ -347,6 +353,8 @@ void loop() {
     tilink.handleCalc();
 #endif
 
+    shell.loop();
+
     if ( Serial.available() ) {
         int b = Serial.read();
         if ( b == 0x03 ) { // Ctrl-C
@@ -358,6 +366,8 @@ void loop() {
             storage.lsToStream(&Serial, SHELL_MODE_SERIAL);
         } else if ( b == 0x06 ) { // Ctrl-F
             tilink.sendVar("keyb");
+        } else if ( b == 0x07 ) { // Ctrl-G
+            shell.begin(&Serial);
         } else {
             tilink.write(b);
         }

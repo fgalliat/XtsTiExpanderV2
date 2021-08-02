@@ -53,10 +53,14 @@
 
 #include "lib_display.h"
 #include "lib_sound.h"
+#include "lib_shell.h"
+
 
 #if not MAIN_CODE
   extern Speaker speaker;
   extern Storage storage;
+  extern Shell shell;
+  extern TiLink tilink;
 #endif
 
 #define SHELL_MODE_TELNET 0x01
@@ -75,3 +79,4 @@ static int hexStrToInt(char* str) {
     sscanf(str, "%02X", &hexNumber);
     return hexNumber;
 }
+
