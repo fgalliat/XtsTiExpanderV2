@@ -50,7 +50,7 @@ void scPowerJauge(float voltage) {
 
   int wMax = 30;
   int www = wMax + 2 + 2;
-  int ww = 100 * percent / wMax;
+  int ww = wMax * percent / 100;
   int xx = 240 - www - 5;
   int yy = 0;
   int hh = 2;
