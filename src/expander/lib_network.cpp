@@ -163,7 +163,7 @@ void Network::loopTelnet() {
           Serial.println(serverClients[i].remoteIP());
 
           shell.begin(&serverClients[i]);
-          shell.setEcho(false);
+          // shell.setEcho(false);
 
           break;
         }

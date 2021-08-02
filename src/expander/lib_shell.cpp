@@ -126,6 +126,10 @@ bool Shell::loop() {
         char cmdline[brPos+1];
         memcpy(cmdline, curline, brPos+1);
         cmdline[brPos] = 0x00;
+        if ( curline[brPos+1] == '\n' || curline[brPos+1] == '\r' ) {
+            // double BR ?
+            brPos++;
+        }
         memmove(&curline[0], &curline[brPos+1], SHELL_LINE_MAX-brPos);
         curlineCursor -= brPos+1;
 
