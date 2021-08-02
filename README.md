@@ -17,7 +17,9 @@
  - [X] SPIFFS
  - [x] Buzzer
  - [x] WiFi
- - [~] 'tiaction' spe Var handle
+   - [x] start, stop, conf
+   - [x] telnet as Shell client (still a bug on close)
+ - [x] 'tiaction' spe Var handle
 
 
 - **Sub Features** :

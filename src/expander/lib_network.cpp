@@ -112,7 +112,7 @@ void Network::stop() {
 //   displayCls();
 //   displayPrintln("Closing WiFi");
 //   displayBlitt();
-Serial.print("Closing WiFi");
+Serial.println("Closing WiFi");
 
   for(int i = 0; i < MAX_SRV_CLIENTS; i++) {
     if (serverClients[i]) serverClients[i].stop();
@@ -124,7 +124,7 @@ Serial.print("Closing WiFi");
   // FIXME : display
 //   displayPrintln("Closed WiFi");
 //   displayBlitt();
-  Serial.print("Closed WiFi");
+  Serial.println("Closed WiFi");
   connected = false;
   WIFI_READY = false;
 }
@@ -137,9 +137,10 @@ void Network::loop() {
 // FIXME : move to main code ...
 /** return true if sessionStream/Mode should be closed */
 bool sessionLoop(Stream* client, int shellMode) {
-    client->println("Welcome !");
-    client->println("Bye");
-    return true;
+    // client->println("Welcome !");
+    // client->println("Bye");
+    // return true;
+    return !shell.isOpened();
 }
 
 
@@ -160,6 +161,10 @@ void Network::loopTelnet() {
           Serial.print("New client: ");
           Serial.print(i); Serial.print(' ');
           Serial.println(serverClients[i].remoteIP());
+
+          shell.begin(&serverClients[i]);
+          shell.setEcho(false);
+
           break;
         }
       }

@@ -292,8 +292,22 @@ void tiAction(char* action) {
       #endif
   } else if ( strncmp("wifi:stop", action, 9) == 0 ) {
       netw.stop();
+      #if HAS_DISPLAY
+        scLandscape();
+        scCls();
+        tft.println( "Wifi disconnect" );
+        tft.println( "" );
+        scRestore();
+      #endif
   } else if ( strncmp("screen:swap", action, 9) == 0 ) {
       oled.swapColorScheme();
+      #if HAS_DISPLAY
+        scLandscape();
+        scCls();
+        tft.println( "Color swapped" );
+        tft.println( "" );
+        scRestore();
+      #endif
   } else {
       Serial.println("Unknown action");
   }

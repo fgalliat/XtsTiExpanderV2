@@ -20,9 +20,11 @@ Shell::~Shell() {
 // }
 
 void Shell::end() {
+    if ( !opened ) { return; }
     curClient->println("Goodbye");
     curClient = NULL;
     opened = false;
+    resetCurLine();
 }
 
 bool Shell::isOpened() {
@@ -88,9 +90,11 @@ char* Shell::readLine(bool echo) {
 
 
 void Shell::begin(Stream* client) {
+    end();
     curClient = client;
     opened = true;
     resetCurLine();
+    setEcho(true);
     curClient->println("Hello world");
 }
 
