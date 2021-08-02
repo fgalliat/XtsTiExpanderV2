@@ -25,6 +25,10 @@ class Storage {
       // void appendFile(fs::FS &fs, const char * path, const char * message);
       // void readFile(fs::FS &fs, const char * path, Stream* output);
 
+      long diskUsage();
+      long diskSpace();
+      long diskFree();
+
       void lsToStream(Stream* client, int shellMode);
       char** lsToArray(int& size, bool sort);
       void lsToScreen();

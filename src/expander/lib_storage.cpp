@@ -43,6 +43,20 @@ bool Storage::begin() {
 void Storage::end() {
 }
 
+long Storage::diskUsage() {
+   long used = SPIFFS.usedBytes();
+   return used;
+}
+
+long Storage::diskSpace() {
+   long total = SPIFFS.totalBytes();
+   return total;
+}
+
+long Storage::diskFree() {
+   return diskSpace() - diskUsage();
+}
+
 void Storage::lsToStream(Stream* client, int shellMode) {
    if ( !storage_ready ) {
       client->println("No FileSystem mounted");
@@ -161,7 +175,9 @@ void Storage::lsToScreen() {
          xx += 72; // 12 * 6
       }
    }
-   tft.println( "-EOL-" );
+   tft.setCursor(xx, 7+(cpt*8));
+   int freeSpace = (int)( diskFree() / 1024 );
+   tft.print( "-EOL- " ); tft.print(freeSpace); tft.print( " KB free" );
 
    if (entries != NULL) {
       free(entries);
