@@ -50,3 +50,4 @@
   - [x] add WiFi conf
   - [x] start / stop WiFi
   - [x] screen dump
+  - [x] builtin screen color scheme / swap

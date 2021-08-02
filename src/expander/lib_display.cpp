@@ -60,3 +60,48 @@ void scPowerJauge(float voltage) {
   tft.drawRoundRect(xx-4, yy, www, hhh, 3, ti_fgColor);
   tft.fillRect(xx, yy+1+1, ww, hh, ti_fgColor);
 }
+
+// ----- new API -----
+
+#define COLOR_CONFIG "color.cnf"
+
+Display::Display() {}
+Display::~Display() {}
+
+void Display::readColorScheme() {
+  int error = 0;
+  File conf = storage.getConfFileRead(COLOR_CONFIG, error);
+  if ( error != 0 || conf.available() < 4 ) {
+      if ( error == 0 ) { conf.close(); }
+      return;
+  }
+
+  ti_fgColor = (conf.read() << 8) + conf.read();
+  ti_bgColor = (conf.read() << 8) + conf.read();
+
+  conf.close();
+}
+
+void Display::setColorScheme(uint16_t fg, uint16_t bg) {
+  ti_fgColor = fg;
+  ti_bgColor = bg;
+
+  int error = 0;
+  File conf = storage.getConfFileWrite(COLOR_CONFIG, error);
+  if ( error == 0 ) {
+    conf.write( ti_fgColor >> 8 );
+    conf.write( ti_fgColor % 256 );
+    conf.write( ti_bgColor >> 8 );
+    conf.write( ti_bgColor % 256 );
+    conf.flush();
+    conf.close();
+  }
+}
+
+void Display::swapColorScheme() {
+  setColorScheme(ti_bgColor, ti_fgColor);
+}
+
+void Display::warning(char* text) {
+  // FIXME: impl.
+}

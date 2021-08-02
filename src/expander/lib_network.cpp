@@ -36,6 +36,7 @@ void Network::start() {
   int error = 0;
   File conf = storage.getConfFileRead(WIFI_PSK_CONFIG, error);
   if ( error != 0 || conf.available() == 0 ) {
+      if ( error == 0 ) { conf.close(); }
       // FIXME : display
       Serial.println("No available WiFi config");
       return;

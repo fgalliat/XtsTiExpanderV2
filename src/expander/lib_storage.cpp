@@ -279,6 +279,21 @@ File Storage::getConfFileRead(const char * confName, int &error) {
    return file;
 }
 
+File Storage::getConfFileWrite(const char * confName, int &error) {
+   char path[64+1]; memset( path, 0x00, 64+1 );
+   sprintf( path, "%s%s", CONF_DIR, confName );
+   Serial.printf("Writing file: %s\r\n", path);
+
+   File file = SPIFFS.open(path, FILE_WRITE);
+   if(!file){
+      Serial.println("− failed to open file for write");
+      error = 1;
+      return file;
+   }
+   error = 0;
+   return file;
+}
+
 void Storage::eraseConfFile(const char * confName) {
    char path[64+1]; memset( path, 0x00, 64+1 );
    sprintf( path, "%s%s", CONF_DIR, confName );

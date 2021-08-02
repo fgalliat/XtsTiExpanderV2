@@ -12,6 +12,7 @@ Speaker speaker;
 Storage storage;
 Shell shell;
 Network netw;
+Display oled;
 
 // ================================================
 // Specific ESP32 Timer
@@ -291,6 +292,8 @@ void tiAction(char* action) {
       #endif
   } else if ( strncmp("wifi:stop", action, 9) == 0 ) {
       netw.stop();
+  } else if ( strncmp("screen:swap", action, 9) == 0 ) {
+      oled.swapColorScheme();
   } else {
       Serial.println("Unknown action");
   }
@@ -339,6 +342,7 @@ void setup() {
    #endif
 
    #if HAS_DISPLAY
+     oled.readColorScheme();
      storage.lsToScreen();
    #endif
 }
@@ -387,6 +391,14 @@ void loop() {
             tilink.sendVar("keyb");
         } else if ( b == 0x07 ) { // Ctrl-G
             shell.begin(&Serial);
+        } else if ( b == 0x08 ) { // Ctrl-H
+            oled.swapColorScheme();
+            #if HAS_DISPLAY
+              scLandscape();
+              scCls();
+              tft.println("Color swapped");
+              scRestore();
+            #endif
         } else {
             tilink.write(b);
         }

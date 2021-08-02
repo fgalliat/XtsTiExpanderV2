@@ -41,5 +41,6 @@ class Storage {
       // Config specific
       File createConfFileAppend(const char * confName, int &error);
       File getConfFileRead(const char * confName, int &error);
+      File getConfFileWrite(const char * confName, int &error);
       void eraseConfFile(const char * confName);
 };

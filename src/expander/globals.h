@@ -62,6 +62,7 @@
   extern Shell shell;
   extern TiLink tilink;
   extern Network netw;
+  extern Display oled;
 #endif
 
 #define SHELL_MODE_TELNET 0x01
