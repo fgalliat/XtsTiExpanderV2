@@ -14,6 +14,7 @@
  // Listing directory: /
  // FILE: /logs/log.txt   SIZE: 14
  #define TIVAR_DIR "/tivars/"
+ #define CONF_DIR "/etc/"
 
 // FIXME : do better
 void Storage::format() {
@@ -247,3 +248,20 @@ File Storage::getTiFile(const char* fullfilename) {
   File file = SPIFFS.open(path, FILE_READ);
   return file;
 }
+
+File Storage::createConfFileAppend(const char * confName, int &error) {
+   char path[64+1]; memset( path, 0x00, 64+1 );
+   sprintf( path, "%s%s", CONF_DIR, confName );
+   Serial.printf("Writing file: %s\r\n", path);
+
+   File file = SPIFFS.open(path, FILE_APPEND);
+   if(!file){
+      Serial.println("− failed to open file for appending");
+      error = 1;
+      return file;
+   }
+   error = 0;
+   return file;
+}
+
+

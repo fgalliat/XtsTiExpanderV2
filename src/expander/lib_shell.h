@@ -20,7 +20,8 @@ class Shell {
       bool appendChar(char ch);
       int containsBR();
 
-      // char* readLine(bool echo=true);
+      // blocking method
+      char* readLine(bool echo=true);
     public:
       Shell();
       ~Shell();

@@ -37,4 +37,7 @@ class Storage {
       File createTiFile(const char * varName, uint8_t varType, int &error);
       char* findTiFile(const char * varName);
       File getTiFile(const char* fullfilename);
+
+      // Config specific
+      File createConfFileAppend(const char * confName, int &error);
 };

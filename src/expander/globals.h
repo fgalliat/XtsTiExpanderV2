@@ -16,8 +16,8 @@
 
 #include "utils.h"
 
-#include "lib_network.h"
 #include "lib_storage.h"
+#include "lib_network.h"
 #include "lib_tilink.h"
 
 #define TTGO_TDISPLAY 1
@@ -61,6 +61,7 @@
   extern Storage storage;
   extern Shell shell;
   extern TiLink tilink;
+  extern Network netw;
 #endif
 
 #define SHELL_MODE_TELNET 0x01

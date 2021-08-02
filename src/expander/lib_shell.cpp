@@ -53,6 +53,40 @@ int Shell::containsBR() {
     return -1;
 }
 
+// blocking method
+char* Shell::readLine(bool echo) {
+    resetCurLine();
+    bool canAppend = false;
+    while(true) {
+        while(curClient->available() <= 0) { delay(30); }
+        while(curClient->available() > 0) {
+            int ch = curClient->peek();
+
+            if ( ch == 0x03 ) { // Ctrl-C
+                return NULL;
+            }
+
+            canAppend = appendChar((char)ch);
+            if ( !canAppend ) { break; }
+            curClient->read();
+            if ( echo ) { curClient->write( ch ); }
+
+            if ( containsBR() > -1 ) {
+                break;
+            }
+
+        }
+        if ( containsBR() > -1 ) {
+            break;
+        }
+    }
+    if (curlineCursor > 0) {
+        curline[ curlineCursor-1 ] = 0x00;
+    }
+    return curline;
+}
+
+
 void Shell::begin(Stream* client) {
     curClient = client;
     opened = true;
@@ -116,6 +150,29 @@ bool Shell::handle(char* cmdline) {
         return true;
     } else if ( strncmp(cmdline, "halt", 4) == 0 ) {
         shutdown();
+        return true;
+    } else if ( strncmp(cmdline, "wifipsk", 7) == 0 ) {
+        curClient->print("New SSID ? ");
+        char* newSSID = readLine(true);
+        if ( newSSID == NULL || strlen( newSSID ) == 0 ) {
+            curClient->print("Abord...");
+            return false;
+        }
+        curClient->print("New PSK ? ");
+        char* newPSK = readLine(true);
+        if ( newPSK == NULL ) {
+            curClient->print("Abord...");
+            return false;
+        }
+        resetCurLine();
+
+        bool ok = netw.addConfig(newSSID, newPSK);
+        if ( ok ) {
+            curClient->println("New config added");
+        } else {
+            curClient->println("Failed to add config");
+        }
+
         return true;
     }
 

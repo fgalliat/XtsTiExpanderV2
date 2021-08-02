@@ -11,6 +11,7 @@ TiLink tilink;
 Speaker speaker;
 Storage storage;
 Shell shell;
+Network netw;
 
 // ================================================
 // Specific ESP32 Timer

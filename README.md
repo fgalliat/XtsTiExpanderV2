@@ -41,3 +41,12 @@
    - [ ] start WiFi ...
 
    /!\\ (recvNb == 0) -> no more : (recvNb == nbSent)
+
+- **Shell Features** :
+  - [x] shutdown esp32
+  - [ ] ls (sorted + df) -> Stream
+  - [ ] cat a var
+  - [ ] cat a conf
+  - [x] add WiFi conf
+  - [ ] start / stop WiFi
+  - [x] screen dump
