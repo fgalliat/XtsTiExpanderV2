@@ -22,6 +22,8 @@ class Shell {
 
       // blocking method
       char* readLine(bool echo=true);
+
+      bool handleVarRecv();
     public:
       Shell();
       ~Shell();

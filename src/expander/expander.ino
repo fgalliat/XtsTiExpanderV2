@@ -14,6 +14,9 @@ Shell shell;
 Network netw;
 Display oled;
 
+// forward symbols
+void startWifi();
+
 // ================================================
 // Specific ESP32 Timer
 volatile bool ISRLOCKED = false;
@@ -157,8 +160,10 @@ void button_init()
         shutdown();
     });
     btn1.setPressedHandler([](Button2 & b) {
-        Serial.println("Detect Voltage..");
-        btnCick = true;
+        // Serial.println("Detect Voltage..");
+        // btnCick = true;
+        btnCick = false;
+        startWifi();
     });
 
     btn2.setPressedHandler([](Button2 & b) {
@@ -217,7 +222,8 @@ void setupHardware() {
     tft.drawString("LeftButton:", tft.width() / 2, tft.height() / 2 - 16);
     tft.drawString("[Screen Dump]", tft.width() / 2, tft.height() / 2 );
     tft.drawString("RightButton:", tft.width() / 2, tft.height() / 2 + 16);
-    tft.drawString("[Voltage Monitor]", tft.width() / 2, tft.height() / 2 + 32 );
+    // tft.drawString("[Voltage Monitor]", tft.width() / 2, tft.height() / 2 + 32 );
+    tft.drawString("[Start Wifi]", tft.width() / 2, tft.height() / 2 + 32 );
     tft.drawString("RightButtonLongPress:", tft.width() / 2, tft.height() / 2 + 48);
     tft.drawString("[Deep Sleep]", tft.width() / 2, tft.height() / 2 + 64 );
     tft.setTextDatum(TL_DATUM);
@@ -263,6 +269,24 @@ void handleTiActionFlush() {
     }
 }
 
+void startWifi() {
+    #if HAS_DISPLAY
+        scLandscape();
+        scCls();
+        tft.println( "Wifi connect" );
+        tft.println( "" );
+        scRestore();
+    #endif
+    netw.start();
+    #if HAS_DISPLAY
+        scLandscape();
+        tft.println( netw.getIP() );
+        tft.println( netw.getNetname() );
+        scRestore();
+    #endif
+}
+
+
 void tiAction(char* action) {
   if ( strncmp("play:", action, 5) == 0 ) {
       char* tune = &action[5];
@@ -276,20 +300,7 @@ void tiAction(char* action) {
         storage.lsToScreen();
       #endif
   } else if ( strncmp("wifi:start", action, 10) == 0 ) {
-      #if HAS_DISPLAY
-        scLandscape();
-        scCls();
-        tft.println( "Wifi connect" );
-        tft.println( "" );
-        scRestore();
-      #endif
-      netw.start();
-      #if HAS_DISPLAY
-        scLandscape();
-        tft.println( netw.getIP() );
-        tft.println( netw.getNetname() );
-        scRestore();
-      #endif
+      startWifi();
   } else if ( strncmp("wifi:stop", action, 9) == 0 ) {
       netw.stop();
       #if HAS_DISPLAY

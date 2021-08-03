@@ -201,7 +201,85 @@ bool Shell::handle(char* cmdline) {
         }
 
         return true;
+    } else if ( strncmp(cmdline, "/send", 5) == 0 ) {
+        return handleVarRecv();
     }
 
 return false;
+}
+
+bool Shell::handleVarRecv() {
+  // handle even Ctrl-C
+  char* resp = readLine(true);
+
+  #if HAS_DISPLAY
+    scLandscape();
+    scCls();
+    tft.println("Var receiving");
+  #else
+  #endif
+
+  if ( resp == NULL || strlen(resp) == 0 ) {
+    // FIXME : warning
+    curClient->println("/!\\ Empty varName.");
+    #if HAS_DISPLAY
+      tft.println("/!\\ Empty varName.");
+      scRestore();
+    #endif
+    return false;
+  }
+  char varName[8+1]; sprintf(varName, "%s", resp);
+
+  uint8_t varType = curClient->read();
+  uint16_t varLength = (curClient->read() << 8) + curClient->read(); // 64K max
+  bool varSendToTi = curClient->read() > 0; // auto send to Ti ?
+
+  int error = 0;
+  File f = storage.createTiFile(varName, varType, error);
+  if ( error != 0 ) {
+    // FIXME : warning
+    curClient->println("/!\\ Failed to open file");
+    #if HAS_DISPLAY
+      tft.println("/!\\ Failed to open file");
+      scRestore();
+    #endif
+    return false;
+  }
+
+  #if HAS_DISPLAY
+  tft.print(F("ExpVarRecv >> name : ")); tft.println(varName); 
+  tft.print(F("ExpVarRecv >> type : ")); tft.println(varType, HEX); 
+  tft.print(F("ExpVarRecv >> varLength : ")); tft.println(varLength); 
+  #endif
+
+  const int blocLen = 64;
+  uint16_t i; int read;
+
+  for(i = 0; i < varLength; i+= blocLen) {
+      while( curClient->available() <= 0 ) { delay(10); }
+      int avail = curClient->available();
+      // FIXME : better 
+      for(int j = 0; j < avail; j++) {
+          int b = curClient->read();
+          f.write(b);
+      }
+
+      #if HAS_DISPLAY
+        scLowerJauge( 100* ( i+avail ) / varLength );
+      #endif
+  }
+
+  #if HAS_DISPLAY
+  tft.println(F("ExpVarRecv >> EOF "));
+  #endif
+
+  f.flush();
+  f.close();
+
+  if ( varSendToTi ) {
+      delay(500);
+      tilink.sendVar(varName);
+  }
+
+  return true;
 }
