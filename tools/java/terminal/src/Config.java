@@ -12,6 +12,9 @@ public class Config {
         return instance;
     }
 
+    String lastDir = "./";
+
+
     public String getLastHostname() {
         // FIXME : persists
         return "192.168.1.21";
@@ -23,11 +26,12 @@ public class Config {
 
     public String getLastDir() {
         // FIXME : persists
-        return "./";
+        return lastDir;
     }
 
-    public void setLastDire(String directory) {
+    public void setLastDir(String directory) {
         // FIXME : persists
+        lastDir = directory;
     }
 
 }

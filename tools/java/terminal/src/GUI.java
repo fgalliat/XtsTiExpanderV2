@@ -1,9 +1,8 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
+import java.io.File;
+import java.util.Locale;
 
 public class GUI {
 
@@ -71,7 +70,12 @@ public class GUI {
 
             }
         }, true, "red"));
-        actionPane.add(new TermButton("send", null));
+        actionPane.add(new TermButton("send", new TermButtonAction() {
+            @Override
+            public void run() {
+                buildSendingPanel();
+            }
+        }, true, null));
         actionPane.add(new TermButton("recv", null));
         actionPane.add(new TermButton("quit", new TermButtonAction() {
             @Override
@@ -93,7 +97,7 @@ public class GUI {
                 super.keyTyped(e);
                 char ch = e.getKeyChar();
                 ExpanderClient.getInstance().write(ch);
-                if ( ch == '\n' ) {
+                if (ch == '\n') {
                     editLine.setText("");
                 }
             }
@@ -143,6 +147,122 @@ public class GUI {
                 });
             }
         }
+    }
+
+    protected String openFileDlg(String currentFile) {
+        final JFileChooser fc = new JFileChooser();
+        fc.setCurrentDirectory(new File(Config.getInstance().getLastDir()));
+        if (currentFile != null) {
+            File f = new File(currentFile);
+            if (f.exists()) {
+                fc.setSelectedFile(f);
+            }
+        }
+
+        int returnVal = fc.showOpenDialog(win);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = fc.getSelectedFile();
+            //This is where a real application would open the file.
+            addTextToConsole("Opening: " + file.getName() + "." + "\n");
+            return file.getPath();
+        } else {
+            addTextToConsole("Open command cancelled by user." + "\n");
+        }
+        return null;
+    }
+
+    protected boolean isNativeFormatFile(String currentFile) {
+        if (currentFile == null) {
+            return false;
+        }
+        String lname = currentFile.toLowerCase().trim();
+        if (lname.isEmpty()) {
+            return false;
+        }
+        String lnameWoLastPart = lname.substring(0, lname.length() - 1);
+        if (lnameWoLastPart.endsWith(".92") || lnameWoLastPart.endsWith(".9x") || lnameWoLastPart.endsWith(".v2") || lnameWoLastPart.endsWith(".89")) {
+            // regular Texas Variable Files
+            return true;
+        }
+        // own storage
+        return false;
+    }
+
+    public void buildSendingPanel() {
+        JOptionPane optPane = new JOptionPane("Send to Expander", JOptionPane.INFORMATION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+        final JDialog dlg = optPane.createDialog(win, "Sending to Expander");
+        Container panel = dlg.getRootPane();
+        panel.removeAll();
+        panel.setLayout(new GridLayout(-1, 2));
+
+        final JCheckBox nativeFile = new JCheckBox();
+        final JCheckBox sendToTiToo = new JCheckBox();
+        final JTextField fileField = new JTextField("file to send ...");
+
+
+        final TermButton okBtn = new TermButton("OK", new TermButtonAction() {
+            @Override
+            public void run() {
+                addTextToConsole("OK will send " + fileField.getText().trim());
+                dlg.setVisible(false);
+            }
+        }, true, "#999966");
+
+
+        Runnable fileChecker = new Runnable() {
+            @Override
+            public void run() {
+                String choosenFile = fileField.getText();
+                if (choosenFile == null && !choosenFile.trim().isEmpty()) {
+                    nativeFile.setSelected(false);
+                    sendToTiToo.setSelected(false);
+                    okBtn.setEnabled(false);
+                } else {
+                    nativeFile.setSelected(isNativeFormatFile(choosenFile));
+                    sendToTiToo.setSelected(false); // could save a default value
+                    okBtn.setEnabled(true);
+                }
+            }
+        };
+
+        fileField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+                String choosenFile = openFileDlg(fileField.getText());
+                if (choosenFile != null) {
+                    fileField.setText(choosenFile);
+                    Config.getInstance().setLastDir( new File(choosenFile).getParent() );
+                }
+                fileChecker.run();
+            }
+        });
+        fileField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+                fileChecker.run();
+            }
+        });
+
+        okBtn.setEnabled(false);
+
+        panel.add(new JLabel("File"));
+        panel.add(fileField);
+        panel.add(new JLabel("Native ?"));
+        panel.add(nativeFile);
+        panel.add(new JLabel("Send to Ti too ?"));
+        panel.add(sendToTiToo);
+
+        panel.add(okBtn);
+        panel.add(new TermButton("CANCEL", new TermButtonAction() {
+            @Override
+            public void run() {
+                dlg.setVisible(false);
+            }
+        }));
+        dlg.setVisible(true);
     }
 
 
