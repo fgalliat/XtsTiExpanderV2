@@ -149,16 +149,16 @@ void shutdown() {
 
 void button_init()
 {
-    btn1.setLongClickHandler([](Button2 & b) {
-        btnCick = false;
-        int r = digitalRead(TFT_BL);
-        tft.fillScreen(TFT_BLACK);
-        tft.setTextColor(TFT_GREEN, TFT_BLACK);
-        tft.setTextDatum(MC_DATUM);
-        tft.drawString("Press again to wake up",  tft.width() / 2, tft.height() / 2 );
-        espDelay(6000);
-        shutdown();
-    });
+    // btn1.setLongClickHandler([](Button2 & b) {
+    //     btnCick = false;
+    //     int r = digitalRead(TFT_BL);
+    //     tft.fillScreen(TFT_BLACK);
+    //     tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    //     tft.setTextDatum(MC_DATUM);
+    //     tft.drawString("Press again to wake up",  tft.width() / 2, tft.height() / 2 );
+    //     espDelay(6000);
+    //     shutdown();
+    // });
     btn1.setPressedHandler([](Button2 & b) {
         // Serial.println("Detect Voltage..");
         // btnCick = true;
@@ -225,7 +225,8 @@ void setupHardware() {
     // tft.drawString("[Voltage Monitor]", tft.width() / 2, tft.height() / 2 + 32 );
     tft.drawString("[Start Wifi]", tft.width() / 2, tft.height() / 2 + 32 );
     tft.drawString("RightButtonLongPress:", tft.width() / 2, tft.height() / 2 + 48);
-    tft.drawString("[Deep Sleep]", tft.width() / 2, tft.height() / 2 + 64 );
+    // tft.drawString("[Deep Sleep]", tft.width() / 2, tft.height() / 2 + 64 );
+    tft.drawString("[Nothing]", tft.width() / 2, tft.height() / 2 + 64 );
     tft.setTextDatum(TL_DATUM);
 
 }

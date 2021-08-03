@@ -3,6 +3,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 public class ExpanderClient {
@@ -134,14 +135,45 @@ public class ExpanderClient {
 
         String expFileName = varName + "." + Integer.toHexString(varType);
 
-        GUI.getInstance().addTextToConsole("cmd:send\n");
-        GUI.getInstance().addTextToConsole("nam:" + expFileName + "\n");
+        GUI.getInstance().addTextToConsole("cmd:" + "/send\n");
+        // GUI.getInstance().addTextToConsole("nam:" + expFileName + "\n");
+        GUI.getInstance().addTextToConsole("nam:" + varName + "\n");
         GUI.getInstance().addTextToConsole("typ:" + Integer.toHexString(varType) + "\n"); // -> uint8_t
         GUI.getInstance().addTextToConsole("siz:" + (varSize - 2) + "\n"); // -> uint16_t -- -2 only for display
         GUI.getInstance().addTextToConsole("tiS:" + (sendToTiToo ? "1" : "0") + "\n");
 
+        out.write("/send\r".getBytes(StandardCharsets.UTF_8));
+        out.flush();
 
+        //Utils.delay(50);
+        while( in.available() < 0 ) { Utils.delay(10); }
+        while( in.available() > 0 ) { in.read(); } // read potential echo messages
+
+
+        out.write((varName + "\r").getBytes(StandardCharsets.UTF_8));
+        out.write(varType);
+        out.write((int) (varSize >> 8)); out.write((int) (varSize % 256));
+        out.write(sendToTiToo ? 0x01 : 0x00);
+        out.flush();
+        // Utils.delay(50);
+
+        while( in.available() < 0 ) { Utils.delay(10); } // wait for RTS
+        in.read();
+
+        final int blocLen = 64;
+        byte[] buff = new byte[blocLen];
+        int read;
+        for (int i = 0; i < varSize; i += blocLen) {
+            read = fin.read(buff, 0, blocLen);
+            out.write(buff, 0, read);
+            // Utils.delay(2);
+            while( in.available() < 0 ) { Utils.delay(10); }
+            while( in.available() > 0 ) { in.read(); } // wread handshake
+        }
         fin.close();
+
+        GUI.getInstance().addTextToConsole("-EOF-");
+
         return true;
     }
 
