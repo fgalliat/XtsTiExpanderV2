@@ -198,14 +198,22 @@ public class GUI {
 
         final JCheckBox nativeFile = new JCheckBox();
         final JCheckBox sendToTiToo = new JCheckBox();
-        final JTextField fileField = new JTextField("file to send ...");
+        final JTextField fileField = new JTextField("");
 
 
         final TermButton okBtn = new TermButton("OK", new TermButtonAction() {
             @Override
             public void run() {
-                addTextToConsole("OK will send " + fileField.getText().trim());
                 dlg.setVisible(false);
+                File f = new File(fileField.getText().trim());
+
+                addTextToConsole("OK will send Var " + f.getName()+"\n");
+
+                try {
+                    ExpanderClient.getInstance().sendVarToExpander(f, nativeFile.isSelected(), sendToTiToo.isSelected());
+                } catch (Exception ex) {
+                    addTextToConsole(ex.toString() + "\n");
+                }
             }
         }, true, "#999966");
 
@@ -233,7 +241,7 @@ public class GUI {
                 String choosenFile = openFileDlg(fileField.getText());
                 if (choosenFile != null) {
                     fileField.setText(choosenFile);
-                    Config.getInstance().setLastDir( new File(choosenFile).getParent() );
+                    Config.getInstance().setLastDir(new File(choosenFile).getParent());
                 }
                 fileChecker.run();
             }
