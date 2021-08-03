@@ -185,8 +185,12 @@ void TiLink::dummyMode() {
 
         }
 
-        // waitAvailable(200);
-        recvNb = readBytes(recv, 2);
+        if ( savedPollMode ) {
+          // waitAvailable(200);
+          recvNb = readBytes(recv, 2);
+        } else {
+          recvNb = ti_recv(recv, 2, false, 130);
+        }
         if ( recvNb > 0 ) {
           if ( recv[0] == 'X' && recv[1] == ':' ) {
             waitAvailable(200);

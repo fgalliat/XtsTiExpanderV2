@@ -45,7 +45,7 @@ int ti_read(long enterTimeout=GET_ENTER_TIMEOUT, long nextTimeout=GET_ENTER_TIME
 // return written bytes nb
 int ti_write(uint8_t* seg, int segLen);
 // return read bytes nb
-int ti_recv(uint8_t* seg, int segMaxLen, bool waitLong=false, bool waitOnlyFirst=false);
+int ti_recv(uint8_t* seg, int segMaxLen, bool waitLong=false, long waitOnlyFirstByte=GET_ENTER_TIMEOUT);
 
 bool ti_sendVar(Stream* input);
 bool ti_reqScreen(Stream* output, bool ascii);

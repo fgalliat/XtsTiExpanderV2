@@ -26,7 +26,7 @@
  - [x] connect & send/receive bytes to Ti Voyage 200
 
  - [~] SerialTerm to V200
-   - [~] Dummy mode
+   - [x] Dummy mode
    - [~] CBL Keyb mode
    - [x] Raw
    
