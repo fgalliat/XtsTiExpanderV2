@@ -208,7 +208,8 @@ int ti_read(long enterTimeout, long nextTimeout) {
 }
 
 // return read bytes
-int ti_recv(uint8_t* seg, int segMaxLen, bool waitLong) {
+int ti_recv(uint8_t* seg, int segMaxLen, bool waitLong, bool waitOnlyFirst) {
+	int tm = GET_ENTER_TIMEOUT;
 	for(int i=0; i < segMaxLen; i++) {
 		if ( i == 0 && waitLong ) {
 			int tmp = ti_read(10000, 2000);
@@ -217,11 +218,12 @@ int ti_recv(uint8_t* seg, int segMaxLen, bool waitLong) {
 			}
 			seg[0] = (uint8_t)tmp;
 		} else {
-			int tmp = ti_read();
+			int tmp = ti_read(tm, tm);
 			if ( tmp < 0 ) {
 				return i;
 			}
 			seg[i] = (uint8_t)tmp;
+			if ( waitOnlyFirst ) { tm = 80; }
 		}
 	}
 	return segMaxLen;

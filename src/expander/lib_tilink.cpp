@@ -117,8 +117,8 @@ void TiLink::dummyMode() {
   Stream* term = &Serial;
 
   bool savedPollMode = isPollMode();
-  // setPollMode(false); // disable polling
-  // delay(ISR_DURATION * 2);
+  setPollMode(false); // disable polling
+  delay(ISR_DURATION * 2);
 
   int recvNb;
   #if ASCII_OUTPUT
@@ -222,8 +222,12 @@ void TiLink::dummyMode() {
                 }
               }
               int toRead = 8;
-              if ( isPollMode() ) { toRead = available(); }
-              readBytes(recv, toRead );
+              if ( isPollMode() ) { 
+                toRead = available(); 
+                readBytes(recv, toRead );
+              } else {
+                ti_recv(recv, toRead, false, true);
+              }
               memset(intValue, 0x00, 10);
               for(int i=0; i < toRead; i++) {
                 if ( recv[i] == '\n' ) { intValue[i] = 0x00; break; }
