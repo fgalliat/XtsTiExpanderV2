@@ -53,3 +53,19 @@
   - [x] start / stop WiFi
   - [x] screen dump
   - [x] builtin screen color scheme / swap
+
+- **Commands set** : 
+
+  | tiaction          | shell     | action                                      |
+  | ----------------- | --------- | ------------------------------------------- |
+  | wifi:start        | wifistart | start WiFi & telnet server                  |
+  | wifi:stop         | wifistop  | close WiFi & telnet                         |
+  |                   | wifipsk   | add WiFi config (interactive)               |
+  |                   | wifidel   | delete all WiFi configs                     |
+  | screen:swap       |           | swap OLED screen color scheme               |
+  |                   | screen    | TiScreenDump                                |
+  | get:<varName>     |           | sends the <varName> to Ti                   |
+  | play:<tuneString> |           | plays the <tuneString> onto Expander BUZZER |
+  |                   | quit      | exit from Shell                             |
+  |                   | halt      | shutdown Expander MCU                       |
+  | list:             | ls        | list files to ?screen?                      |
