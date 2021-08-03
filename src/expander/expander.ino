@@ -392,6 +392,10 @@ void loop() {
     netw.loop();
     shell.loop();
 
+    if ( dummyStream.available() > 0 ) {
+        Serial.write(dummyStream.read());
+    }
+
     if ( Serial.available() ) {
         int b = Serial.read();
         if ( b == 0x03 ) { // Ctrl-C
@@ -414,7 +418,11 @@ void loop() {
               scRestore();
             #endif
         } else {
-            tilink.write(b);
+            if ( dummyStream.isOpened() ) {
+                dummyStream.write(b);
+            } else {
+                tilink.write(b);
+            }
         }
     }
 

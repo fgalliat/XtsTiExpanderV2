@@ -112,201 +112,281 @@ char intValue[10];
 #define ASCII_OUTPUT 1
 #define DBUG_DUMMY true
 
-
+// @Deprecated
 void TiLink::dummyMode() {
   Stream* term = &Serial;
 
-  bool savedPollMode = isPollMode();
-  setPollMode(false); // disable polling
-  delay(ISR_DURATION * 2);
+term->println("DUMMY mode impl. no more Used !");
 
-  int recvNb;
-  #if ASCII_OUTPUT
-    if (DBUG_DUMMY) term->println(F("DUMMY"));
-  #else
-    term->print(F(OUT_BIN_ENTER_DUMMY));
-  #endif
+  // bool savedPollMode = isPollMode();
+  // setPollMode(false); // disable polling
+  // delay(ISR_DURATION * 2);
 
-  term->setTimeout(400);
+  // int recvNb;
+  // #if ASCII_OUTPUT
+  //   if (DBUG_DUMMY) term->println(F("DUMMY"));
+  // #else
+  //   term->print(F(OUT_BIN_ENTER_DUMMY));
+  // #endif
 
-  resetLines();
+  // term->setTimeout(400);
 
-      // see : https://internetofhomethings.com/homethings/?p=927
-      const int MAX_READ_LEN = 32;
-      int bytesSentToTi = 0;
+  // resetLines();
+  
 
-      memset(screen, 0x00, MAX_READ_LEN+1);
-      int fullPacketLen = 0;
+  //     // see : https://internetofhomethings.com/homethings/?p=927
+  //     const int MAX_READ_LEN = 32;
+  //     int bytesSentToTi = 0;
 
-      int toRead;
-      int cpt=0;
-      int kc;
+  //     memset(screen, 0x00, MAX_READ_LEN+1);
+  //     int fullPacketLen = 0;
 
-      char chs[2] = { 0x00, 0x00 };
+  //     int toRead;
+  //     int cpt=0;
+  //     int kc;
 
-      char msg[30];
+  //     char chs[2] = { 0x00, 0x00 };
 
-      while(true) {
+  //     char msg[30];
 
-        while ( term->available() > 0 ) {
-          // int t = min( MAX_READ_LEN, Serial.available() ); // read only what's available 
-          // int read = serPort.readBytes( screen, t );
-          // if ( read <= 0 ) { break; }
-          // ti_send( screen, read );
-          // delay( 15 * read ); // wait for XtsTerm ASM Ti
+  //     while(true) {
 
-          int avail = term->available();
-          int max = min( MAX_READ_LEN, avail ); // read only what's available 
+  //       while ( term->available() > 0 ) {
+  //         // int t = min( MAX_READ_LEN, Serial.available() ); // read only what's available 
+  //         // int read = serPort.readBytes( screen, t );
+  //         // if ( read <= 0 ) { break; }
+  //         // ti_send( screen, read );
+  //         // delay( 15 * read ); // wait for XtsTerm ASM Ti
 
-          if ( bytesSentToTi + max > MAX_READ_LEN ) {
-            max = MAX_READ_LEN - bytesSentToTi;
-          }
+  //         int avail = term->available();
+  //         int max = min( MAX_READ_LEN, avail ); // read only what's available 
 
-          int read = term->readBytes( TMP_RAM, max );
-          if ( read <= 0 ) { break; }
-          ti_write( (uint8_t*)TMP_RAM, read );
+  //         if ( bytesSentToTi + max > MAX_READ_LEN ) {
+  //           max = MAX_READ_LEN - bytesSentToTi;
+  //         }
 
-          bytesSentToTi += read;
-          // internal HandShake System -- BEWARE : no more compatible w/ (devel4ti/test_gcc4ti_1/main.c)
-          if ( bytesSentToTi == MAX_READ_LEN ) {
-            int hndTimeout = 0;
-            recv[0] = 0x00;
-            while( readBytes(recv, 1) <= 0 && (char)recv[0] != 'h' ) { 
-              delay(2);
-              hndTimeout++;
-              if ( hndTimeout > 2000 ) { break; } // prevent from inf. loop
-            } // waits for Ti-handshake
+  //         int read = term->readBytes( TMP_RAM, max );
+  //         if ( read <= 0 ) { break; }
+  //         ti_write( (uint8_t*)TMP_RAM, read );
 
-            chs[0] = 'H';
-            // ti_send( chs, 1 ); // waits for Pc-Handshake
-            write(chs[0]);
-            bytesSentToTi = 0;
-          }
+  //         bytesSentToTi += read;
+  //         // internal HandShake System -- BEWARE : no more compatible w/ (devel4ti/test_gcc4ti_1/main.c)
+  //         if ( bytesSentToTi == MAX_READ_LEN ) {
+  //           int hndTimeout = 0;
+  //           recv[0] = 0x00;
+  //           while( readBytes(recv, 1) <= 0 && (char)recv[0] != 'h' ) { 
+  //             delay(2);
+  //             hndTimeout++;
+  //             if ( hndTimeout > 2000 ) { break; } // prevent from inf. loop
+  //           } // waits for Ti-handshake
 
-        }
+  //           chs[0] = 'H';
+  //           // ti_send( chs, 1 ); // waits for Pc-Handshake
+  //           write(chs[0]);
+  //           bytesSentToTi = 0;
+  //         }
 
-        if ( savedPollMode ) {
-          // waitAvailable(200);
-          recvNb = readBytes(recv, 2);
-        } else {
-          recvNb = ti_recv(recv, 2, false, 130);
-        }
-        if ( recvNb > 0 ) {
-          if ( recv[0] == 'X' && recv[1] == ':' ) {
-            waitAvailable(200);
-            recvNb = readBytes(recv, 4+1);
-            if ( recvNb > 0 && recv[0] == '?' && recv[1] == 'e' ) {
-              // X:?end\n -> end of serial session
-              #if ASCII_OUTPUT
-                if (DBUG_DUMMY) term->println(F("EXIT DUMMY"));
-              #else
-                term->print(F(OUT_BIN_EXIT_DUMMY));
-              #endif
-              // reboot();
-              setPollMode(savedPollMode);
-              return;
-            } 
-          } else if ( recv[0] == 'K' && recv[1] == ':' ) {
-              //K:<code>\n
+  //       }
 
-              // found key 97       a
-              // found key 56       num
-              // found key 338      arrow
-              // found key 344      arrow
-              // found key 264      Esc
-              // found key 4360     2nd + Esc => Quit
-              // found key 257      backspace
+  //       if ( savedPollMode ) {
+  //         // waitAvailable(200);
+  //         recvNb = readBytes(recv, 2);
+  //       } else {
+  //         recvNb = ti_recv(recv, 2, false, 130);
+  //       }
+  //       if ( recvNb > 0 ) {
+  //         if ( recv[0] == 'X' && recv[1] == ':' ) {
+  //           waitAvailable(200);
+  //           recvNb = readBytes(recv, 4+1);
+  //           if ( recvNb > 0 && recv[0] == '?' && recv[1] == 'e' ) {
+  //             // X:?end\n -> end of serial session
+  //             #if ASCII_OUTPUT
+  //               if (DBUG_DUMMY) term->println(F("EXIT DUMMY"));
+  //             #else
+  //               term->print(F(OUT_BIN_EXIT_DUMMY));
+  //             #endif
+  //             // reboot();
+  //             setPollMode(savedPollMode);
+  //             return;
+  //           } 
+  //         } else if ( recv[0] == 'K' && recv[1] == ':' ) {
+  //             //K:<code>\n
 
-              // waitAvailable(200);
-              if ( isPollMode() ) {
-                long curTime = millis();
-                while( available() < 5 ) {
-                  delay(30);
-                  if ( millis() - curTime > 200 ) { break; }
-                }
-              }
-              int toRead = 8;
-              if ( isPollMode() ) { 
-                toRead = available(); 
-                readBytes(recv, toRead );
-              } else {
-                ti_recv(recv, toRead, false, true);
-              }
-              memset(intValue, 0x00, 10);
-              for(int i=0; i < toRead; i++) {
-                if ( recv[i] == '\n' ) { intValue[i] = 0x00; break; }
-                intValue[i] = recv[i];
-              }
-              kc = atoi( intValue );
-              //Serial.print(F("found key [")); Serial.print(kc); Serial.print(F("] (")); Serial.print( (char)kc ); Serial.print(F(") \n"));
-              if ( kc == 264 ) { 
-                // Esc
-                kc = 27; 
-                term->write( kc );
-              }
-              else if ( kc == 13 ) { 
-                // Enter
-                kc = 10; 
-                term->write( kc );
-              }
-              else if ( kc == 257 ) { 
-                // BackSpace
-                term->write( 8 );
-                term->write( 32 );
-                term->write( 8 );
-              }
-              else if ( kc >= 337 && kc <= 348 ) {
-                // Arrows key
-                if ( kc == 338 ) { // UP
-                  term->write( 27 );
-                  term->print(F("[A"));
-                } else if ( kc == 344 ) { // DOWN
-                  term->write( 27 );
-                  term->print(F("[B"));
-                } else if ( kc == 337 ) { // LEFT
-                  term->write( 27 );
-                  term->print(F("[D"));
-                } else if ( kc == 340 ) { // RIGHT
-                  term->write( 27 );
-                  term->print(F("[C"));
-                } 
-              }
-              else if ( kc == 4360 ) {
-                // 2nd + Quit
-                // - dirty trap -
-                #if ASCII_OUTPUT
-                  if (DBUG_DUMMY) term->println(F("EXIT DUMMY"));
-                #else
-                  term->print(F(OUT_BIN_EXIT_DUMMY));
-                #endif
-                readBytes(recv, 2+4+1);
-                // reboot();
-                setPollMode(savedPollMode);
-                return;
-              }
-              else if (kc > 0 && kc < 256) {
-                term->write( kc );
-              } else {
-                term->print(">K:");
-                term->println( intValue );
-              }
-          } // end of key read
+  //             // found key 97       a
+  //             // found key 56       num
+  //             // found key 338      arrow
+  //             // found key 344      arrow
+  //             // found key 264      Esc
+  //             // found key 4360     2nd + Esc => Quit
+  //             // found key 257      backspace
 
-        } // end if recvNb == 0
+  //             // waitAvailable(200);
+  //             if ( isPollMode() ) {
+  //               long curTime = millis();
+  //               while( available() < 5 ) {
+  //                 delay(30);
+  //                 if ( millis() - curTime > 200 ) { break; }
+  //               }
+  //             }
+  //             int toRead = 8;
+  //             if ( isPollMode() ) { 
+  //               toRead = available(); 
+  //               readBytes(recv, toRead );
+  //             } else {
+  //               ti_recv(recv, toRead, false, true);
+  //             }
+  //             memset(intValue, 0x00, 10);
+  //             for(int i=0; i < toRead; i++) {
+  //               if ( recv[i] == '\n' ) { intValue[i] = 0x00; break; }
+  //               intValue[i] = recv[i];
+  //             }
+  //             kc = atoi( intValue );
+  //             //Serial.print(F("found key [")); Serial.print(kc); Serial.print(F("] (")); Serial.print( (char)kc ); Serial.print(F(") \n"));
+  //             if ( kc == 264 ) { 
+  //               // Esc
+  //               kc = 27; 
+  //               term->write( kc );
+  //             }
+  //             else if ( kc == 13 ) { 
+  //               // Enter
+  //               kc = 10; 
+  //               term->write( kc );
+  //             }
+  //             else if ( kc == 257 ) { 
+  //               // BackSpace
+  //               term->write( 8 );
+  //               term->write( 32 );
+  //               term->write( 8 );
+  //             }
+  //             else if ( kc >= 337 && kc <= 348 ) {
+  //               // Arrows key
+  //               if ( kc == 338 ) { // UP
+  //                 term->write( 27 );
+  //                 term->print(F("[A"));
+  //               } else if ( kc == 344 ) { // DOWN
+  //                 term->write( 27 );
+  //                 term->print(F("[B"));
+  //               } else if ( kc == 337 ) { // LEFT
+  //                 term->write( 27 );
+  //                 term->print(F("[D"));
+  //               } else if ( kc == 340 ) { // RIGHT
+  //                 term->write( 27 );
+  //                 term->print(F("[C"));
+  //               } 
+  //             }
+  //             else if ( kc == 4360 ) {
+  //               // 2nd + Quit
+  //               // - dirty trap -
+  //               #if ASCII_OUTPUT
+  //                 if (DBUG_DUMMY) term->println(F("EXIT DUMMY"));
+  //               #else
+  //                 term->print(F(OUT_BIN_EXIT_DUMMY));
+  //               #endif
+  //               readBytes(recv, 2+4+1);
+  //               // reboot();
+  //               setPollMode(savedPollMode);
+  //               return;
+  //             }
+  //             else if (kc > 0 && kc < 256) {
+  //               term->write( kc );
+  //             } else {
+  //               term->print(">K:");
+  //               term->println( intValue );
+  //             }
+  //         } // end of key read
+
+  //       } // end if recvNb == 0
         
-        //delay(5);
-      } // end while dummy
+  //       //delay(5);
+  //     } // end while dummy
 
-      #if ASCII_OUTPUT
-        if (DBUG_DUMMY) term->println(F("LEAVING DUMMY MODE"));
-      #else
-        term->print(F(OUT_BIN_EXIT_DUMMY));
-      #endif
+  //     #if ASCII_OUTPUT
+  //       if (DBUG_DUMMY) term->println(F("LEAVING DUMMY MODE"));
+  //     #else
+  //       term->print(F(OUT_BIN_EXIT_DUMMY));
+  //     #endif
 
 
-  setPollMode(savedPollMode);
+  // setPollMode(savedPollMode);
 }
 
+void TiLink::enterDummyMode() {
+  Stream* curClient = &Serial; // FIXME
+  inDummyMode = true;
+  dummyStream.begin();
+  curClient->println("Entry DUMMY");
+}
+void TiLink::exitDummyMode() {
+  Stream* curClient = &Serial; // FIXME
+  dummyStream.end();
+  inDummyMode = false;
+  curClient->println("Exit DUMMY");
+}
+
+bool TiLink::loopDummyMode() {
+  // FIXME : assume pollMode == false
+  bool savedPollMode = isPollMode();
+
+  // Stream curClient = &Serial; // FIXME
+  // while(curClient->available() > 0) {
+  //   // FIXME : overflow / handshake
+  //   int ch = curClient.read();
+  //   dummyStream->write(ch);
+  // }
+
+  uint8_t recv[16];
+  int recvNb = ti_recv(recv, 2, false, 80);
+  if ( recvNb == 0 ) { return false; }
+
+  if ( recvNb == 2 ) {
+    if ( recv[0] == 'X' && recv[1] == ':' ) {
+      // waitAvailable(200);
+      recvNb = ti_recv(recv, 4+1);
+      if ( recvNb > 0 && recv[0] == '?' && recv[1] == 'e' ) {
+        // X:?end\n -> end of serial session
+        // #if ASCII_OUTPUT
+        //   if (DBUG_DUMMY) term->println(F("EXIT DUMMY"));
+        // #else
+        //   term->print(F(OUT_BIN_EXIT_DUMMY));
+        // #endif
+        // // reboot();
+        exitDummyMode();
+        setPollMode(savedPollMode);
+        return true;
+      } 
+    } else if ( recv[0] == 'K' && recv[1] == ':' ) {
+      //K:<code>\n
+
+      // found key 97       a
+      // found key 56       num
+      // found key 338      arrow
+      // found key 344      arrow
+      // found key 264      Esc
+      // found key 4360     2nd + Esc => Quit
+      // found key 257      backspace
+      int toRead = 8;
+      ti_recv(recv, toRead, false, 300);
+      memset(intValue, 0x00, 10);
+      for(int i=0; i < toRead; i++) {
+        if ( recv[i] == '\n' ) { intValue[i] = 0x00; break; }
+        intValue[i] = recv[i];
+      }
+      int kc = atoi( intValue );
+
+      if ( kc == 264 ) { kc = 27; } // Esc
+      else if ( kc == 13 ) { kc = 10; } // Enter
+      else if ( kc == 257 ) { kc = 8; } // BckSp
+      else if ( kc == 4360 ) { kc = 3; exitDummyMode(); } // 2nd+QUIT
+
+      dummyStream.appendToInputBuffer((char)kc);
+      setPollMode(savedPollMode);
+      return true;
+    }
+  }
+
+  setPollMode(savedPollMode);
+  return false;
+}
 
 
 // to refactor ======================
@@ -358,6 +438,11 @@ bool TiLink::waitAvailable(long timeout) {
 }
 
 bool TiLink::handleCalc() {
+  if ( inDummyMode ) {
+    return loopDummyMode();
+  }
+
+
   bool savedPollMode = isPollMode();
 
   if ( savedPollMode && available() <= 0 ) { return false; }
@@ -391,7 +476,8 @@ bool TiLink::handleCalc() {
       if ( recvNb == 7 && recv[0] == '?' && recv[1] == 'b' ) {
         // X:?begin\n
         // dummy serial mode : XtsTerm.92p
-        dummyMode();
+        //dummyMode();
+        enterDummyMode();
       }
     } else if ( recvNb == 2 ) { // any other content
       if ( isPollMode() ) {

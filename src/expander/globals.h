@@ -54,7 +54,7 @@
 #include "lib_display.h"
 #include "lib_sound.h"
 #include "lib_shell.h"
-
+#include "lib_tistream.h"
 
 #if not MAIN_CODE
   extern Speaker speaker;
@@ -63,6 +63,9 @@
   extern TiLink tilink;
   extern Network netw;
   extern Display oled;
+  extern TiDummyStream dummyStream;
+#else
+  TiDummyStream dummyStream;
 #endif
 
 #define SHELL_MODE_TELNET 0x01

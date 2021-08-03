@@ -10,7 +10,12 @@
 
 class TiLink : public Stream {
     private:
-      void dummyMode();
+      void dummyMode(); // Deprecated
+
+      bool inDummyMode = false;
+      void enterDummyMode();
+      void exitDummyMode();
+      bool loopDummyMode();
     public:
       TiLink();
       ~TiLink();
