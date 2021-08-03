@@ -262,7 +262,7 @@ bool Shell::handleVarRecv() {
 
   for(i = 0; i < varLength; i+= blocLen) {
       while( curClient->available() <= 0 ) { delay(10); }
-      int avail = curClient->available();
+      int avail = min(blocLen, curClient->available());
     //   // FIXME : better
     //   for(int j = 0; j < avail; j++) {
     //       int b = curClient->read();

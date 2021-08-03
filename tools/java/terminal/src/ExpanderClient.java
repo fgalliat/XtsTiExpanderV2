@@ -133,6 +133,8 @@ public class ExpanderClient {
             throw new IllegalArgumentException("Wrong varName (for " + f.getName() + ")");
         }
 
+        Terminal.lockISR();
+
         String expFileName = varName + "." + Integer.toHexString(varType);
 
         GUI.getInstance().addTextToConsole("cmd:" + "/send\n");
@@ -142,15 +144,18 @@ public class ExpanderClient {
         GUI.getInstance().addTextToConsole("siz:" + (varSize - 2) + "\n"); // -> uint16_t -- -2 only for display
         GUI.getInstance().addTextToConsole("tiS:" + (sendToTiToo ? "1" : "0") + "\n");
 
-        out.write("/send\r".getBytes(StandardCharsets.UTF_8));
+        out.write("/send\n".getBytes(StandardCharsets.UTF_8));
         out.flush();
 
         //Utils.delay(50);
         while( in.available() < 0 ) { Utils.delay(10); }
-        while( in.available() > 0 ) { in.read(); } // read potential echo messages
+        while( in.available() > 0 ) {
+            int ch = in.read();
+            GUI.getInstance().addTextToConsole( ""+((char)ch) );
+        } // read potential echo messages
 
 
-        out.write((varName + "\r").getBytes(StandardCharsets.UTF_8));
+        out.write((varName + "\n").getBytes(StandardCharsets.UTF_8));
         out.write(varType);
         out.write((int) (varSize >> 8)); out.write((int) (varSize % 256));
         out.write(sendToTiToo ? 0x01 : 0x00);
@@ -165,7 +170,12 @@ public class ExpanderClient {
         int read;
         for (int i = 0; i < varSize; i += blocLen) {
             read = fin.read(buff, 0, blocLen);
-            out.write(buff, 0, read);
+
+            //out.write(buff, 0, read);
+            for(int ii=0; ii < read; ii++) {
+                out.write( buff[ii] );
+            }
+
             // Utils.delay(2);
             while( in.available() < 0 ) { Utils.delay(10); }
             while( in.available() > 0 ) { in.read(); } // wread handshake
@@ -173,6 +183,8 @@ public class ExpanderClient {
         fin.close();
 
         GUI.getInstance().addTextToConsole("-EOF-");
+
+        Terminal.unlockISR();
 
         return true;
     }
