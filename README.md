@@ -74,3 +74,11 @@
   |                   | quit      | exit from Shell                             |
   |                   | halt      | shutdown Expander MCU                       |
   | list:             | ls        | list files to ?screen?                      |
+  
+- **Needs set** : 
+
+
+  - [x] Java telnet tool that works well w/ shell mode (mini-ncurses like / Gfx mode) [wip]
+  - [ ] Java var sending tool (from 86th byte of a .v2x / .92x file / from 1st byte of a .12 file)
+  - [ ] Java var getting tool (as cat varName - need cat vn / dump vn in shell)
+  - [ ] Dummy mode to shell (auto, requires 'login' cmd ?)
