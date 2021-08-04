@@ -55,7 +55,7 @@ uint8_t recv[16];
 uint8_t data[4] = { PC_2_TI, REQ_SCREENSHOT, 0x00, 0x00 };
 
 // ------ Forward symbols -----
-void __resetTILines(bool reboot=false);
+// void __resetTILines(bool reboot=false);
 
 bool setup_tilink(int tip, int ring) {
     TIring = ring;
@@ -65,33 +65,31 @@ bool setup_tilink(int tip, int ring) {
         return false;
     }
 
-    __resetTILines(!true);
-// 	pinMode(TIring, INPUT_PULLUP);
-//   pinMode(TItip, INPUT_PULLUP);
-
+    __resetTILines(true);
     return true;
 }
 
 void __resetTILines(bool reboot) {
   pinMode(TIring, INPUT_PULLUP);
   pinMode(TItip, INPUT_PULLUP);
-// digitalWrite(TIring, HIGH);       // turn on pullup resistors
-//   digitalWrite(TItip, HIGH);        // turn on pullup resistors
 
-  // if (reboot) {
-  //   digitalWrite(TIring, LOW);       // for reset purposes
-  //   digitalWrite(TItip, LOW);        // for reset purposes
-  // }
-  // digitalWrite(TIring, HIGH);       // turn on pullup resistors
-  // digitalWrite(TItip, HIGH);        // turn on pullup resistors
+  if ( reboot ) {
+	digitalWrite(TIring, LOW);       // for reset purposes
+	digitalWrite(TItip, LOW);        // for reset purposes	
+	delay(5);
+	digitalWrite(TIring, HIGH);       // turn on pullup resistors
+	digitalWrite(TItip, HIGH);        // turn on pullup resistors
+	delay(10);
+  }
+
 }
 
 #define serial_ Serial
 #define ERR_WRITE_TIMEOUT -1
 #define ERR_READ_ENTER_TIMEOUT -1
 
-void resetLines(void) {
-  __resetTILines(false);
+void resetLines(bool reboot=false) {
+  __resetTILines(reboot);
 }
 
 // impl. based on ArTiCl code
@@ -212,7 +210,7 @@ int ti_recv(uint8_t* seg, int segMaxLen, bool waitLong, long waitOnlyFirstByte) 
 	int tm = waitOnlyFirstByte;
 	for(int i=0; i < segMaxLen; i++) {
 		if ( i == 0 && waitLong ) {
-			int tmp = ti_read(10000, 2000);
+			int tmp = ti_read(10000, 800);
 			if ( tmp < 0 ) {
 				return 0;
 			}

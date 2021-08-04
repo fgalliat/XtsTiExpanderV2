@@ -32,8 +32,8 @@ bool TiLink::begin(int tip, int ring) {
 void TiLink::end() {
 }
 
-void TiLink::resetLines() {
-  __resetTILines(false);
+void TiLink::resetLines(bool restoreLines) {
+  __resetTILines(restoreLines);
 }
 
 void pushToBuffer(uint8_t b) {
@@ -929,16 +929,18 @@ bool TiLink::sendVar(char* varName, bool silent) {
   
   // == ACK ==
   if ( !false ) { Serial.println("wait ACK"); }
-  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK")); return -1; }
+  memset(recv, 0x00, 4);
+  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK")); return false; }
   
   // == CTS ==
   if ( !false ) { Serial.println("wait CTS"); }
-  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read CTS")); return -1; }
+  memset(recv, 0x00, 4);
+  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read CTS")); return false; }
   
   // == ACK ==
-  uint8_t B[4] = { 0x09, 0x56, 0x00, 0x00 };
+  static const uint8_t B[4] = { 0x09, 0x56, 0x00, 0x00 };
   if ( !false ) { Serial.println("send ACK"); }
-  ti_write(B, 4);
+  ti_write((uint8_t*)B, 4);
   delay(DEFAULT_POST_DELAY/2);
   
   // == XDP == 
@@ -950,17 +952,18 @@ bool TiLink::sendVar(char* varName, bool silent) {
   
   // == ACK ==
   if ( !false ) { Serial.println("wait ACK"); }
-  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK (2)")); return -1; }
+  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK (2)")); return false; }
   
   // == EOT ==
-  uint8_t D[4] = { 0x09, 0x92, 0x00, 0x00 };
+  static const uint8_t D[4] = { 0x09, 0x92, 0x00, 0x00 };
   if ( !false ) { Serial.println("send EOT"); }
-  ti_write(D, 4);
-  delay(DEFAULT_POST_DELAY/2);  
+  ti_write((uint8_t*)D, 4);
+  delay(DEFAULT_POST_DELAY/2); 
   
   // ACK ==
   if ( !false ) { Serial.println("wait ACK"); }
-  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK (3)")); return -1; }
+  memset(recv, 0x00, 4);
+  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK (3)")); return false; }
 
   Serial.println(F("I:Var sent"));
   #if HAS_DISPLAY
@@ -971,8 +974,8 @@ bool TiLink::sendVar(char* varName, bool silent) {
 
   f.close();
 
-  resetLines();
-
+  resetLines(true);
+  
   setPollMode(savedMode);
   return true;
 }

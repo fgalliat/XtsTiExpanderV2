@@ -23,7 +23,7 @@ class TiLink : public Stream {
       bool begin(int tip, int ring);
       void end();
 
-      void resetLines();
+      void resetLines(bool restoreLines=false);
 
       bool requestScreen(Stream* out, bool asciiMode = false); 
       int sendKeyStrokes(char* data, int len=-1);

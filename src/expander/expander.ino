@@ -371,6 +371,13 @@ void setup() {
      oled.readColorScheme();
      storage.lsToScreen();
    #endif
+
+   Serial.println("-= Welcome on XtsTiExpanderV2 =-");
+   Serial.println(" Ctrl-C to dump Screen");
+   Serial.println(" Ctrl-H to swap screen colors");
+   Serial.println("");
+   Serial.println(" Ctrl-G to activate Serial Shell");
+   Serial.println("");
 }
 
 long lastTime = millis();
