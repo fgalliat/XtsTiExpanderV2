@@ -52,7 +52,7 @@
 - **Shell Features** :
   - [x] shutdown esp32
   - [ ] ls (sorted + df) -> Stream
-  - [ ] cat a var
+  - [ ] cat a var / hex var
   - [ ] cat a conf
   - [x] add WiFi conf
   - [x] start / stop WiFi

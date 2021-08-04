@@ -121,7 +121,9 @@ public class ExpanderClient {
             varType = fin.read();
 
             fin.skip(LEGACY_VAR_DATA_OFFSET - LEGACY_VAR_TYPE_OFFSET - 1);
-            varSize -= LEGACY_VAR_DATA_OFFSET;
+            // varSize -= LEGACY_VAR_DATA_OFFSET;
+            varSize = fin.read() << 8; // need to read 2 bytes @86 [MSB]
+            varSize += fin.read(); // [LSB]
         } else {
             varType = nameToTiVarType(f.getName());
             varName = nameToTiVarName(f.getName());
