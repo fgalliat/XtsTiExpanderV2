@@ -207,6 +207,12 @@ bool Shell::handle(char* cmdline) {
     } else if ( strncmp(cmdline, "del ", 4) == 0 ) {
         char* varname = &cmdline[4];
         return delVar(varname);
+    } else if ( strncmp(cmdline, "send ", 5) == 0 ) {
+        char* varname = &cmdline[5];
+        return tilink.sendVar(varname);
+    } else if ( strncmp(cmdline, "ice", 3) == 0 ) {
+        // In Case of EMergency
+        return emergency();
     }
 
     curClient->print("Ya asked : ");curClient->print(cmdline);curClient->println();
@@ -277,7 +283,17 @@ bool Shell::handleVarRecv() {
 
   curClient->write(0x01); // CTS
   while( curClient->available() <= 0 ) { delay(5); }
-  curClient->read(); // ACK CTS
+  int ack = curClient->read(); // ACK CTS
+  if ( ack != 0x02 ) {
+      // FIXME : warning
+      #if HAS_DISPLAY
+      scLandscape();
+      tft.println("/!\\ Copy abort");
+      scRestore();
+      #endif
+      f.close();
+      return false;
+  }
 
   const int blocLen = 128; uint8_t bloc[blocLen];
   uint16_t i=0; int read; int cpt = 0;
@@ -286,9 +302,9 @@ bool Shell::handleVarRecv() {
     scLowerJauge( 0 );
   #endif
   while(i < varLength) {
-      memset( bloc, 0x00, blocLen );
-      while( curClient->available() <= 0 ) { delay(2); }
+    //   memset( bloc, 0x00, blocLen );
 
+      while( curClient->available() <= 0 ) { delay(1); }
       //int avail = min(blocLen, curClient->available());
       int avail = curClient->read(); // len to copy
 
@@ -300,7 +316,7 @@ bool Shell::handleVarRecv() {
       }
 
       #if HAS_DISPLAY
-        if ( cpt >= 3 ) {
+        if ( cpt >= 2 ) {
           scLowerJauge( 100* ( i+avail ) / varLength );
           cpt = 0;
         }
@@ -374,4 +390,8 @@ void Shell::hexDump(uint8_t* data, int dataLen, bool asciiToo) {
         }
     }
     curClient->println();
+}
+
+bool Shell::emergency() {
+    return tilink.sendVar("menu");
 }

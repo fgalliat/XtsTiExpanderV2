@@ -39,4 +39,6 @@ class Shell {
 
       bool hexVar(char* varName);
       bool delVar(char* varName);
+
+      bool emergency();
 };

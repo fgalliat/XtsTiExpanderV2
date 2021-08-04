@@ -868,6 +868,8 @@ bool TiLink::sendVar(char* varName, bool silent) {
     return false;
   }
 
+  resetLines();
+
   char* filename = storage.findTiFile(varName);
   if ( filename == NULL ) {
     // FIXME : WARNING code
@@ -968,6 +970,8 @@ bool TiLink::sendVar(char* varName, bool silent) {
   #endif
 
   f.close();
+
+  resetLines();
 
   setPollMode(savedMode);
   return true;

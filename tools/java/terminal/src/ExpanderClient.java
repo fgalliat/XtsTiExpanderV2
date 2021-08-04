@@ -172,18 +172,18 @@ public class ExpanderClient {
 
 
         out.write((varName + "\n").getBytes(StandardCharsets.UTF_8));
-        Utils.delay(5);
+//        Utils.delay(5);
 
         write(varType);
-        Utils.delay(5);
+//        Utils.delay(5);
 
         write((int) (varSize >> 8));
         write((int) (varSize % 256));
-        Utils.delay(5);
+//        Utils.delay(5);
 
         write(sendToTiToo ? 0x01 : 0x00);
         out.flush();
-        Utils.delay(5);
+//        Utils.delay(5);
 
         GUI.getInstance().addTextToConsole("Waiting for Expander CTS\n");
         while (in.available() <= 0) {
@@ -192,9 +192,11 @@ public class ExpanderClient {
         int cts = in.read();
         if (cts != 0x01) {
             GUI.getInstance().addTextToConsole("Oups CTS may be not valid [" + ((int) cts) + "]\n");
+            write( 0x03 ); // abord
+        } else {
+            GUI.getInstance().addTextToConsole("Received Expander CTS\n");
+            write(0x02);
         }
-        GUI.getInstance().addTextToConsole("Received Expander CTS\n");
-        write( 0x02 );
 
         final int blocLen = 128; // must be < 256 / as same as arduino side
         byte[] buff = new byte[blocLen];
@@ -202,18 +204,14 @@ public class ExpanderClient {
         int i = 0;
         while (i < varSize) {
             read = fin.read(buff, 0, min(blocLen, fin.available()));
-
 //            GUI.getInstance().debugDatas(buff, read);
 
             write( read ); // send len to copy
             out.write(buff, 0, read);
-            out.flush();
-//            for(int ii=0; ii < read; ii++) {
-//                write( buff[ii] < 0 ? buff[ii]+256 : buff[ii] );
-//            }
+//            out.flush();
 
             while (in.available() <= 0) {
-                Utils.delay(2);
+                Utils.delay(1);
             }
             int handshake = in.read();
             if (handshake != 0x01) {
