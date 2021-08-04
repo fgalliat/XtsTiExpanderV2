@@ -404,7 +404,7 @@ void loop() {
     netw.loop();
     shell.loop();
 
-    if ( dummyStream.available() > 0 ) {
+    if ( !dummyStream.isLoopDisabled() && dummyStream.available() > 0 ) {
         Serial.write(dummyStream.read());
     }
 

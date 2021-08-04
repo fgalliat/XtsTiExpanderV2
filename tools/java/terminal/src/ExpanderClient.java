@@ -58,7 +58,7 @@ public class ExpanderClient {
             return false;
         }
         try {
-            while (in.available() > 0) {
+            while (in.available() > 0 && !Terminal.ISRlocked) {
                 GUI.getInstance().addTextToConsole("" + ((char) in.read()));
             }
         } catch (Exception ex) {
@@ -74,6 +74,10 @@ public class ExpanderClient {
         } catch (Exception ex) {
             return 0;
         }
+    }
+
+    protected int min(int a, int b) {
+        return a < b ? a : b;
     }
 
     /**
@@ -116,7 +120,7 @@ public class ExpanderClient {
             // fin.skip(LEGACY_VAR_TYPE_OFFSET);
             varType = fin.read();
 
-            fin.skip(LEGACY_VAR_DATA_OFFSET - LEGACY_VAR_TYPE_OFFSET);
+            fin.skip(LEGACY_VAR_DATA_OFFSET - LEGACY_VAR_TYPE_OFFSET - 1);
             varSize -= LEGACY_VAR_DATA_OFFSET;
         } else {
             varType = nameToTiVarType(f.getName());
@@ -133,7 +137,16 @@ public class ExpanderClient {
             throw new IllegalArgumentException("Wrong varName (for " + f.getName() + ")");
         }
 
+        GUI.getInstance().lockInput(true);
         Terminal.lockISR();
+        Utils.delay(50);
+
+        GUI.getInstance().addTextToConsole("[Begin garbage[");
+        while (in.available() > 0) {
+            int ch = in.read();
+            GUI.getInstance().addTextToConsole("" + ((char) ch));
+        } // read potential previous echo messages
+        GUI.getInstance().addTextToConsole("]\n");
 
         String expFileName = varName + "." + Integer.toHexString(varType);
 
@@ -147,44 +160,74 @@ public class ExpanderClient {
         out.write("/send\n".getBytes(StandardCharsets.UTF_8));
         out.flush();
 
-        //Utils.delay(50);
-        while( in.available() < 0 ) { Utils.delay(10); }
-        while( in.available() > 0 ) {
+        while (in.available() <= 0) {
+            Utils.delay(10);
+        }
+        GUI.getInstance().addTextToConsole("[Command garbage[");
+        while (in.available() > 0) {
             int ch = in.read();
-            GUI.getInstance().addTextToConsole( ""+((char)ch) );
-        } // read potential echo messages
+            GUI.getInstance().addTextToConsole("" + ((char) ch));
+        } // read potential previous echo messages
+        GUI.getInstance().addTextToConsole("]\n");
 
 
         out.write((varName + "\n").getBytes(StandardCharsets.UTF_8));
-        out.write(varType);
-        out.write((int) (varSize >> 8)); out.write((int) (varSize % 256));
-        out.write(sendToTiToo ? 0x01 : 0x00);
+        Utils.delay(5);
+
+        write(varType);
+        Utils.delay(5);
+
+        write((int) (varSize >> 8));
+        write((int) (varSize % 256));
+        Utils.delay(5);
+
+        write(sendToTiToo ? 0x01 : 0x00);
         out.flush();
-        // Utils.delay(50);
+        Utils.delay(5);
 
-        while( in.available() < 0 ) { Utils.delay(10); } // wait for RTS
-        in.read();
+        GUI.getInstance().addTextToConsole("Waiting for Expander CTS\n");
+        while (in.available() <= 0) {
+            Utils.delay(5);
+        } // wait for RTS
+        int cts = in.read();
+        if (cts != 0x01) {
+            GUI.getInstance().addTextToConsole("Oups CTS may be not valid [" + ((int) cts) + "]\n");
+        }
+        GUI.getInstance().addTextToConsole("Received Expander CTS\n");
+        write( 0x02 );
 
-        final int blocLen = 64;
+        final int blocLen = 128; // must be < 256 / as same as arduino side
         byte[] buff = new byte[blocLen];
         int read;
-        for (int i = 0; i < varSize; i += blocLen) {
-            read = fin.read(buff, 0, blocLen);
+        int i = 0;
+        while (i < varSize) {
+            read = fin.read(buff, 0, min(blocLen, fin.available()));
 
-            //out.write(buff, 0, read);
-            for(int ii=0; ii < read; ii++) {
-                out.write( buff[ii] );
+//            GUI.getInstance().debugDatas(buff, read);
+
+            write( read ); // send len to copy
+            out.write(buff, 0, read);
+            out.flush();
+//            for(int ii=0; ii < read; ii++) {
+//                write( buff[ii] < 0 ? buff[ii]+256 : buff[ii] );
+//            }
+
+            while (in.available() <= 0) {
+                Utils.delay(2);
+            }
+            int handshake = in.read();
+            if (handshake != 0x01) {
+                GUI.getInstance().addTextToConsole("Oups HANDSHAKE may be not valid [" + ((int) handshake) + "]\n");
             }
 
-            // Utils.delay(2);
-            while( in.available() < 0 ) { Utils.delay(10); }
-            while( in.available() > 0 ) { in.read(); } // wread handshake
+            i += read;
         }
         fin.close();
 
-        GUI.getInstance().addTextToConsole("-EOF-");
+        GUI.getInstance().addTextToConsole("-EOF-\n");
 
         Terminal.unlockISR();
+        GUI.getInstance().lockInput(false);
 
         return true;
     }

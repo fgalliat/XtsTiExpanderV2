@@ -198,6 +198,10 @@ File Storage::createTiFile(const char * varName, uint8_t varType, int &error) {
    sprintf( path, "%s%s.%02X", TIVAR_DIR, varName, varType );
    Serial.printf("Writing file: %s\r\n", path);
 
+   if ( SPIFFS.exists( path ) ) {
+      SPIFFS.remove( path );
+   }
+
    File file = SPIFFS.open(path, FILE_WRITE);
    if(!file){
       Serial.println("− failed to open file for writing");
@@ -248,6 +252,16 @@ File Storage::getTiFile(const char* fullfilename) {
   File file = SPIFFS.open(path, FILE_READ);
   return file;
 }
+
+void Storage::eraseTiFile(const char * varName) {
+   char* tiVarFile = findTiFile(varName);
+   if ( tiVarFile == NULL ) {
+      return;
+   }
+   SPIFFS.remove( tiVarFile );
+}
+
+// -======== Config ========-
 
 File Storage::createConfFileAppend(const char * confName, int &error) {
    char path[64+1]; memset( path, 0x00, 64+1 );

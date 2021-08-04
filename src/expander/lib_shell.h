@@ -22,7 +22,8 @@ class Shell {
 
       // blocking method
       char* readLine(bool echo=true);
-
+      void hexDump(uint8_t* data, int dataLen, bool asciiToo);
+      
       bool handleVarRecv();
     public:
       Shell();
@@ -35,4 +36,7 @@ class Shell {
 
       bool isOpened();
       void setEcho(bool _echo=true);
+
+      bool hexVar(char* varName);
+      bool delVar(char* varName);
 };

@@ -145,8 +145,6 @@ bool Shell::loop() {
 extern void shutdown();
 
 bool Shell::handle(char* cmdline) {
-    curClient->print("Ya asked : ");curClient->print(cmdline);curClient->println();
-
     if ( strncmp(cmdline, "quit", 4) == 0 ) {
         end();
         return true;
@@ -203,14 +201,27 @@ bool Shell::handle(char* cmdline) {
         return true;
     } else if ( strncmp(cmdline, "/send", 5) == 0 ) {
         return handleVarRecv();
+    } else if ( strncmp(cmdline, "hex ", 4) == 0 ) {
+        char* varname = &cmdline[4];
+        return hexVar(varname);
+    } else if ( strncmp(cmdline, "del ", 4) == 0 ) {
+        char* varname = &cmdline[4];
+        return delVar(varname);
     }
+
+    curClient->print("Ya asked : ");curClient->print(cmdline);curClient->println();
 
 return false;
 }
 
 bool Shell::handleVarRecv() {
-  // handle even Ctrl-C
-  char* resp = readLine(true);
+//   dummyStream.setLoopDisabled(true);
+//   bool savedEcho = echo;
+//   setEcho(false);
+
+  // handle even Ctrl-C -- waits varName
+  resetCurLine();
+  char* resp = readLine(!true);
 
   #if HAS_DISPLAY
     scLandscape();
@@ -227,13 +238,18 @@ bool Shell::handleVarRecv() {
       scRestore();
     #endif
     resetCurLine();
+    // dummyStream.setLoopDisabled(false);
+    // setEcho(savedEcho);
     return false;
   }
   char varName[8+1]; sprintf(varName, "%s", resp);
   resetCurLine();
 
+  while( curClient->available() <= 0 ) { delay(5); }
   uint8_t varType = curClient->read();
+  while( curClient->available() <= 0 ) { delay(5); }
   uint16_t varLength = (curClient->read() << 8) + curClient->read(); // 64K max
+  while( curClient->available() <= 0 ) { delay(5); }
   bool varSendToTi = curClient->read() > 0; // auto send to Ti ?
 
   int error = 0;
@@ -245,6 +261,8 @@ bool Shell::handleVarRecv() {
       tft.println("/!\\ Failed to open file");
       scRestore();
     #endif
+    // dummyStream.setLoopDisabled(false);
+    // setEcho(savedEcho);
     return false;
   }
 
@@ -255,28 +273,46 @@ bool Shell::handleVarRecv() {
   tft.print(F("ExpVarRecv >> sendToTi  : ")); tft.println(varSendToTi ? "1" : "0"); 
   #endif
 
+  while( curClient->available() > 0 ) { curClient->read(); }
+
   curClient->write(0x01); // CTS
+  while( curClient->available() <= 0 ) { delay(5); }
+  curClient->read(); // ACK CTS
 
-  const int blocLen = 64; uint8_t bloc[blocLen];
-  uint16_t i; int read;
+  const int blocLen = 128; uint8_t bloc[blocLen];
+  uint16_t i=0; int read; int cpt = 0;
 
-  for(i = 0; i < varLength; i+= blocLen) {
-      while( curClient->available() <= 0 ) { delay(10); }
-      int avail = min(blocLen, curClient->available());
-    //   // FIXME : better
-    //   for(int j = 0; j < avail; j++) {
-    //       int b = curClient->read();
-    //       f.write(b);
-    //   }
-      int read = curClient->readBytes(bloc, avail);
-      f.write(bloc, read);
+  #if HAS_DISPLAY
+    scLowerJauge( 0 );
+  #endif
+  while(i < varLength) {
+      memset( bloc, 0x00, blocLen );
+      while( curClient->available() <= 0 ) { delay(2); }
+
+      //int avail = min(blocLen, curClient->available());
+      int avail = curClient->read(); // len to copy
+
+      int tt = 0;
+      while(tt < avail) {
+        int read = curClient->readBytes(bloc, avail-tt);
+        f.write(bloc, read);
+        tt+=avail;
+      }
 
       #if HAS_DISPLAY
-        scLowerJauge( 100* ( i+avail ) / varLength );
+        if ( cpt >= 3 ) {
+          scLowerJauge( 100* ( i+avail ) / varLength );
+          cpt = 0;
+        }
       #endif
 
       curClient->write(0x01); // Handshake
+      i+= avail;
+      cpt++;
   }
+  #if HAS_DISPLAY
+    scLowerJauge( 100 );
+  #endif
 
   #if HAS_DISPLAY
   tft.println(F("ExpVarRecv >> EOF "));
@@ -290,5 +326,52 @@ bool Shell::handleVarRecv() {
       tilink.sendVar(varName);
   }
 
+//   dummyStream.setLoopDisabled(false);
+//   setEcho(savedEcho);
+
   return true;
+}
+
+bool Shell::delVar(char* varName) {
+    storage.eraseTiFile(varName);
+    return true;
+}
+
+bool Shell::hexVar(char* varName) {
+    if ( varName == NULL || strlen(varName) <= 0 ) {
+        return false;
+    }
+    char* filename = storage.findTiFile(varName);
+    if ( filename == NULL ) {
+        curClient->printf("Var %s was not found\n", varName);
+        return false;
+    }
+
+    File f = storage.getTiFile(filename);
+    if ( !f ) {
+        curClient->printf("Var %s was not reachable\n", varName);
+        return false;
+    }
+
+    int blocLen = 16; uint8_t bloc[blocLen];
+    for(int i=0; i < f.size(); i+=blocLen) {
+        int remaining = min(blocLen, f.available());
+        f.readBytes( (char*)bloc, remaining );
+        hexDump(bloc, remaining, true);
+    }
+    curClient->printf("-EOF- (%d bytes)\n", f.size());
+    f.close();
+
+    return true;
+}
+
+void Shell::hexDump(uint8_t* data, int dataLen, bool asciiToo) {
+    for(int i=0; i < dataLen; i++) {
+        if ( asciiToo ) {
+            curClient->printf("%02X%c ", data[i], ( data[i] >= 32 && data[i] < 128 ? data[i] : '?' ) );
+        } else {
+            curClient->printf("%02X ", data[i] );
+        }
+    }
+    curClient->println();
 }

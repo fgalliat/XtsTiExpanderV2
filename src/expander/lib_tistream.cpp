@@ -22,6 +22,14 @@ bool TiDummyStream::isOpened() {
     return opened;
 }
 
+bool TiDummyStream::isLoopDisabled() {
+    return loopDisabled;
+}
+
+void TiDummyStream::setLoopDisabled(bool state) {
+    loopDisabled = state;
+}
+
 bool TiDummyStream::begin() { 
     resetInputBuff();
     opened = true;

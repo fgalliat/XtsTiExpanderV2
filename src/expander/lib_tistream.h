@@ -15,13 +15,17 @@ class TiDummyStream : public Stream {
     int inputBuffCursor = 0;
     void resetInputBuff();
     bool opened = false;
+    bool loopDisabled = false;
   public:
     TiDummyStream();
     ~TiDummyStream();
     
     bool begin();
     void end();
+
     bool isOpened();
+    bool isLoopDisabled();
+    void setLoopDisabled(bool state);
 
     bool appendToInputBuffer(char ch);
 

@@ -87,6 +87,7 @@ public class GUI {
         mainPane.add(actionPane, BorderLayout.NORTH);
 
         output = new JTextArea(25, 80);
+        output.setFont(new Font(Font.MONOSPACED, Font.BOLD, 12));
         JScrollPane scrollPane = new JScrollPane(output);
         mainPane.add(scrollPane, BorderLayout.CENTER);
 
@@ -112,6 +113,22 @@ public class GUI {
         win.setVisible(true);
         return win;
     }
+
+    public void debugDatas(byte[] buff, int len) {
+        for (int i = 0; i < len; i++) {
+            int b = buff[i];
+            if (b < 0) {
+                b += 256;
+            }
+            addTextToConsole((b < 16 ? "0" : "") + Integer.toHexString(b) + " ");
+        }
+        addTextToConsole("\n");
+    }
+
+    public void lockInput(boolean b) {
+        editLine.setEnabled(!b);
+    }
+
     // ********************************************************
 
     protected abstract class TermButtonAction implements Runnable {
@@ -207,7 +224,7 @@ public class GUI {
                 dlg.setVisible(false);
                 File f = new File(fileField.getText().trim());
 
-                addTextToConsole("OK will send Var " + f.getName()+"\n");
+                addTextToConsole("OK will send Var " + f.getName() + "\n");
 
                 try {
                     ExpanderClient.getInstance().sendVarToExpander(f, nativeFile.isSelected(), sendToTiToo.isSelected());
