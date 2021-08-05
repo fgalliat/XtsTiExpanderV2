@@ -321,7 +321,7 @@ void tiAction(char* action) {
         scRestore();
       #endif
   } else if ( strncmp("screen:dump", action, 9) == 0 ) {
-      tilink.requestScreen(&Serial, true);
+      tilink.requestScreen(NULL, true);
   } else if ( strncmp("halt:", action, 5) == 0 ) {
       shutdown();
   } else if ( strncmp("ice:", action, 4) == 0 ) {

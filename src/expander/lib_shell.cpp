@@ -203,8 +203,11 @@ bool Shell::handle(char* cmdline) {
         }
 
         return true;
-    } else if ( strncmp(cmdline, "/send", 5) == 0 ) {
+    } else if ( strncmp(cmdline, "/send", 5) == 0 ) { // var to expander
         return handleVarRecv();
+    } else if ( strncmp(cmdline, "/recv ", 6) == 0 ) { // var from expander
+        char* varname = &cmdline[6];
+        return handleVarSend(varname);
     } else if ( strncmp(cmdline, "hex ", 4) == 0 ) {
         char* varname = &cmdline[4];
         return hexVar(varname);
@@ -224,6 +227,82 @@ bool Shell::handle(char* cmdline) {
 return false;
 }
 
+
+
+// var From expander
+bool Shell::handleVarSend(char* varname) {
+  #if HAS_DISPLAY
+    scLandscape();
+    scCls();
+    tft.println("Var sending");
+  #endif
+
+  if ( strlen(varname) <= 0 ) {
+    #if HAS_DISPLAY
+        tft.println("/!\\ Empty Var name");
+        scRestore();
+    #endif
+    curClient->println("/!\\ Empty Var name");
+    return false;
+  }
+
+  char* filename = storage.findTiFile(varname);
+  if ( filename == NULL ) {
+    #if HAS_DISPLAY
+        tft.println("/!\\ Var Not Found");
+        scRestore();
+    #endif
+    curClient->println("/!\\ Var Not Found");
+    return false;
+  }
+
+    File f = storage.getTiFile(filename);
+    if ( !f ) {
+        #if HAS_DISPLAY
+            tft.printf("Var %s was not reachable\n", varname);
+            scRestore();
+        #endif
+        curClient->printf("/!\\ Var %s was not reachable\n", varname);
+        return false;
+    }
+
+    char* varTypeStr = &filename[ strlen( filename ) -2 ];
+    uint8_t varType = hexStrToInt(varTypeStr);
+    uint16_t varLength = f.size()-2;
+
+    #if HAS_DISPLAY
+    tft.print(F("ExpVarSend >> name : ")); tft.println(varname); 
+    tft.print(F("ExpVarSend >> type : ")); tft.println(varType, HEX); 
+    tft.print(F("ExpVarSend >> varLength : ")); tft.println(varLength); 
+
+    scLowerJauge( 0 );
+    #endif
+
+    curClient->write( f.size() >> 8 );
+    curClient->write( f.size() % 256 );
+    curClient->write( varType );
+
+    int blocLen = 128; uint8_t bloc[blocLen];
+    for(int i=0; i < f.size(); i+=blocLen) {
+        int remaining = min(blocLen, f.available());
+        f.readBytes( (char*)bloc, remaining );
+        curClient->write( bloc, remaining );
+        #if HAS_DISPLAY
+          scLowerJauge( 100 * ( i + remaining ) / f.size() );
+        #endif
+    }
+    curClient->printf("-EOF- (%d bytes)\n", f.size());
+    f.close();
+
+  #if HAS_DISPLAY
+    scLowerJauge( 100 );
+    scRestore();
+  #endif
+  return true;
+}
+
+
+// var To expander
 bool Shell::handleVarRecv() {
 //   dummyStream.setLoopDisabled(true);
 //   bool savedEcho = echo;

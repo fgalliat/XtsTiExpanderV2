@@ -1,7 +1,4 @@
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
@@ -78,6 +75,72 @@ public class ExpanderClient {
 
     protected int min(int a, int b) {
         return a < b ? a : b;
+    }
+
+    public boolean getVarFromExpander(String varName) throws Exception {
+        if (varName == null || varName.isEmpty()) {
+            return false;
+        }
+
+
+        GUI.getInstance().lockInput(true);
+        Terminal.lockISR();
+        Utils.delay(50);
+
+        out.write(("/recv " + varName + "\n").getBytes(StandardCharsets.UTF_8));
+
+        while (true) {
+            while (in.available() <= 0) {
+                Utils.delay(10);
+            }
+            int r = in.read();
+            GUI.getInstance().addTextToConsole( ""+(char)r );
+            if ((char) r == '\n') {
+                break;
+            }
+        }
+
+        GUI.getInstance().addTextToConsole("Waiting '" + varName + "'\n");
+
+        while (in.available() <= 0) {
+            Utils.delay(20);
+        }
+
+        int b0 = in.read();
+        int b1 = in.read();
+
+        if ((char) b0 == '/' && (char) b1 == '!') {
+            // BEWARE w/ that test ....
+            GUI.getInstance().addTextToConsole("/!");
+            GUI.getInstance().lockInput(false);
+            Terminal.unlockISR();
+            return false;
+        }
+
+        long varSize = (b0 << 8) + b1; // +2 contains CHK
+        int varType = in.read();
+
+        GUI.getInstance().addTextToConsole("Fetching '" + varName + "' (" + Integer.toHexString(varType) + ") " + varSize + "bytes\n");
+
+        File f = new File("./tivars/" + varName + "." + Integer.toHexString(varType));
+        f.getParentFile().mkdirs();
+
+        FileOutputStream fout = new FileOutputStream(f);
+
+        byte[] buff = new byte[128];
+        for (int i = 0; i < varSize; i++) {
+            int recv = in.read(buff, 0, min( 128, (int)(varSize - i) ));
+            fout.write(buff, 0, recv);
+        }
+
+        fout.flush();
+        fout.close();
+
+        GUI.getInstance().addTextToConsole("-EOF-");
+
+        GUI.getInstance().lockInput(false);
+        Terminal.unlockISR();
+        return true;
     }
 
     /**
@@ -194,7 +257,7 @@ public class ExpanderClient {
         int cts = in.read();
         if (cts != 0x01) {
             GUI.getInstance().addTextToConsole("Oups CTS may be not valid [" + ((int) cts) + "]\n");
-            write( 0x03 ); // abord
+            write(0x03); // abord
         } else {
             GUI.getInstance().addTextToConsole("Received Expander CTS\n");
             write(0x02);
@@ -208,7 +271,7 @@ public class ExpanderClient {
             read = fin.read(buff, 0, min(blocLen, fin.available()));
 //            GUI.getInstance().debugDatas(buff, read);
 
-            write( read ); // send len to copy
+            write(read); // send len to copy
             out.write(buff, 0, read);
 //            out.flush();
 

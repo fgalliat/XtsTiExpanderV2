@@ -76,7 +76,12 @@ public class GUI {
                 buildSendingPanel();
             }
         }, true, null));
-        actionPane.add(new TermButton("recv", null));
+        actionPane.add(new TermButton("recv", new TermButtonAction() {
+            @Override
+            public void run() {
+                buildReceivingPanel();
+            }
+        }, true, null));
         actionPane.add(new TermButton("quit", new TermButtonAction() {
             @Override
             public void run() {
@@ -204,6 +209,80 @@ public class GUI {
         }
         // own storage
         return false;
+    }
+
+    public void buildReceivingPanel() {
+        JOptionPane optPane = new JOptionPane("Receive from Expander", JOptionPane.INFORMATION_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+        final JDialog dlg = optPane.createDialog(win, "Receiving from Expander");
+        Container panel = dlg.getRootPane();
+        panel.removeAll();
+        panel.setLayout(new GridLayout(-1, 2));
+
+        final JTextField fileField = new JTextField("");
+
+
+        final TermButton okBtn = new TermButton("OK", new TermButtonAction() {
+            @Override
+            public void run() {
+                dlg.setVisible(false);
+                String varName = fileField.getText().trim();
+
+                addTextToConsole("OK will fetch Var " + varName + "\n");
+
+                try {
+                    ExpanderClient.getInstance().getVarFromExpander(varName);
+                } catch (Exception ex) {
+                    addTextToConsole(ex.toString() + "\n");
+                }
+            }
+        }, true, "#999966");
+
+
+        Runnable fileChecker = new Runnable() {
+            @Override
+            public void run() {
+                String choosenFile = fileField.getText();
+                if (choosenFile == null && !choosenFile.trim().isEmpty()) {
+                    okBtn.setEnabled(false);
+                } else {
+                    okBtn.setEnabled(true);
+                }
+            }
+        };
+
+        fileField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+                String choosenFile = fileField.getText().trim();
+                if (choosenFile != null) {
+                    fileField.setText(choosenFile);
+//                    Config.getInstance().setLastDir(new File(choosenFile).getParent());
+                }
+                fileChecker.run();
+            }
+        });
+        fileField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+                fileChecker.run();
+            }
+        });
+
+        okBtn.setEnabled(false);
+
+        panel.add(new JLabel("File"));
+        panel.add(fileField);
+
+        panel.add(okBtn);
+        panel.add(new TermButton("CANCEL", new TermButtonAction() {
+            @Override
+            public void run() {
+                dlg.setVisible(false);
+            }
+        }));
+        dlg.setVisible(true);
     }
 
     public void buildSendingPanel() {

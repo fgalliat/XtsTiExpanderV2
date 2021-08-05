@@ -24,7 +24,8 @@ class Shell {
       char* readLine(bool echo=true);
       void hexDump(uint8_t* data, int dataLen, bool asciiToo);
       
-      bool handleVarRecv();
+      bool handleVarRecv(); // var to expander
+      bool handleVarSend(char* varname); // var from expander
     public:
       Shell();
       ~Shell();
