@@ -930,7 +930,14 @@ bool TiLink::sendVar(char* varName, bool silent) {
   // == ACK ==
   if ( !false ) { Serial.println("wait ACK"); }
   memset(recv, 0x00, 4);
-  ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK")); return false; }
+  resetLines();
+  //ti_recv(recv, 4, true); if ( recv[1] == 0x5a ) { Serial.println(F("E:failed to read ACK")); return false; }
+  int rr = ti_recv(recv, 4, false, 4000);
+  if ( rr != 4 || recv[1] != REP_OK ) {
+    Serial.println(F("E:failed to read ACK")); 
+    debugDatas( recv, 4 );
+    return false;
+  }
   
   // == CTS ==
   if ( !false ) { Serial.println("wait CTS"); }

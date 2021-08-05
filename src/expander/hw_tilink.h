@@ -53,7 +53,9 @@ bool ti_reqScreen(Stream* output, bool ascii);
 int ti_sendKeyStrokes(char* data, int len=-1);
 int ti_sendKeyStroke(int data);
 
-uint8_t* ti_chk(uint8_t b[], int len);
+//uint8_t* ti_chk(uint8_t b[], int len);
+uint16_t ti_chk(uint8_t b[], int len);
+
 void ti_header(const char* varName, int fileType, int dataLen, bool silent, int& dtLen, bool send);
 void ti_xdp(char data[], int dataLen, int sendingMode, bool silent, int& dtLen, bool archived, Stream* input, bool inputIsSerial);
 

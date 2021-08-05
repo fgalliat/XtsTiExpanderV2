@@ -402,11 +402,7 @@ void loop() {
       ttgo_loop();
     #endif
 
-#if NO_ISR
     tilink.handleCalc();
-#else
-    tilink.handleCalc();
-#endif
 
     netw.loop();
     shell.loop();

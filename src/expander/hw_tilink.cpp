@@ -374,52 +374,59 @@ void ti_header(const char* varName, int fileType, int dataLen, bool silent, int&
 
     // static : the ONLY way to be sure to return correctly the given array (when converting to pointer)
     // but consume all RAM
-    uint8_t result[ finalLen ];
+    uint8_t result[ finalLen ]; memset(result, 0x00, finalLen);
 	//static char result[ 256 ];
 
 	// MACHINE ID
-	result[0] = (char) (silent ? 0x09 : 0x08);
+	result[0] = (uint8_t) (silent ? 0x09 : 0x08);
 	// CMD
-	result[1] = (char) (silent ? 0xC9 : 0x06);
+	result[1] = (uint8_t) (silent ? 0xC9 : 0x06);
     //result[1] = (char) (silent ? 0x06 : 0xC9);
 
 	// packet length
-	result[2] = (char) (packLen % 256);
-	result[3] = (char) (packLen / 256);
+	result[2] = (uint8_t) (packLen % 256);
+	result[3] = (uint8_t) (packLen / 256);
 
 	// dataLen :: TODO : manager more than 64KB files
-	result[4] = (char) (dataLen % 256);
-	result[5] = (char) (dataLen / 256);
-	result[6] = 0;
-	result[7] = 0;
+	result[4] = (uint8_t) (dataLen % 256);
+	result[5] = (uint8_t) (dataLen / 256);
+	result[6] = 0x00;
+	result[7] = 0x00;
 
 	// file type
-	result[8] = (char) fileType;
+	result[8] = (uint8_t) fileType;
 
 	// file name length
-	result[9] = (char) nameLength;
+	result[9] = (uint8_t) nameLength;
 
 	// file name
 	for (i = 0; i < nameLength; i++) {
 		result[10 + i] = varName[i];
 	}
 	// zero-terminated
-	result[10 + nameLength] = (char) 0;
+	result[10 + nameLength] = 0x00;
 
 	// 11+nameLength => 0
 	// 12+nameLength => 0
 
 	// CHK
-	uint8_t* chk = ti_chk(result, finalLen);
-    result[11 + nameLength] = *(chk+0);
-	result[12 + nameLength] = *(chk+1);
+	// uint8_t* chk = ti_chk(result, finalLen);
+    // result[11 + nameLength] = *(chk+0);
+	// result[12 + nameLength] = *(chk+1);
+	
+	// LSB / MSB
+	uint16_t chk = ti_chk(result, finalLen);
+	result[11 + nameLength] = chk % 256;
+	result[12 + nameLength] = chk >> 8;
+
                 
-    dtLen = finalLen;
 
     if (send) {
        int sent = ti_write(result, finalLen);
-	   if (!false) { Serial.print("ti_header sent = "); Serial.println(sent); }
+	   if (!false) { Serial.print("ti_header sent = "); Serial.print(sent); Serial.print(" / "); Serial.println(finalLen); }
+	   resetLines();
     }
+    dtLen = finalLen;
 }
 
 #define MSW(msg) ( (int) (msg >> 16) )
@@ -566,15 +573,29 @@ if (inputIsSerial) {
     // DBUG(result, 2); // just to verify
 }
 
-uint8_t* ti_chk(uint8_t b[], int len) {
-	int sum = 0;
+// uint8_t* ti_chk(uint8_t b[], int len) {
+// 	int sum = 0;
+// 	for (int i = 4; i < len - 2; i++) {
+// 		sum += b[i];
+// 	}
+// 	int checksum0 = sum % 256;
+// 	int checksum1 = (sum / 256) & 0xFF;
+
+//     // static -> the ONLY way to be sure to return correctly the given array (when converting to pointer)
+//     static uint8_t result[2] = { (uint8_t) checksum0, (uint8_t) checksum1 };
+// 	return result;
+// }
+
+uint16_t ti_chk(uint8_t b[], int len) {
+	uint16_t sum = 0;
 	for (int i = 4; i < len - 2; i++) {
 		sum += b[i];
 	}
-	int checksum0 = sum % 256;
-	int checksum1 = (sum / 256) & 0xFF;
+	// int checksum0 = sum % 256;
+	// int checksum1 = (sum / 256) & 0xFF;
 
-    // static -> the ONLY way to be sure to return correctly the given array (when converting to pointer)
-    static uint8_t result[2] = { (uint8_t) checksum0, (uint8_t) checksum1 };
-	return result;
+    // // static -> the ONLY way to be sure to return correctly the given array (when converting to pointer)
+    // static uint8_t result[2] = { (uint8_t) checksum0, (uint8_t) checksum1 };
+	// return result;
+	return sum;
 }

@@ -87,4 +87,9 @@
   - [ ] Dummy mode to shell (auto -or- requires 'login' cmd ?)
 
 - **Known bugs** :
-  - multiple sendVar on Shell mode
+  - multiple sendVar on Shell mode (Wifi & Serial) / handleCalc mode too
+    - bug is not in ti_handleCalc()
+    - even if screendump between -> need to reboot to send again
+    - can always send pop / never can send popbin after
+    - pbm could be in ti_header ....
+    - THAT WAS : static array return in ti_chk -> FIXED
