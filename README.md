@@ -52,7 +52,7 @@
 - **Shell Features** :
   - [x] shutdown esp32
   - [ ] ls (sorted + df) -> Stream
-  - [ ] cat a var / hex var
+  - [~] cat a var / hex var
   - [ ] cat a conf
   - [x] add WiFi conf
   - [x] start / stop WiFi
@@ -68,11 +68,11 @@
   |                   | wifipsk        | add WiFi config (interactive)               |
   |                   | wifidel        | delete all WiFi configs                     |
   | screen:swap       |                | swap OLED screen color scheme               |
-  |                   | screen         | TiScreenDump                                |
+  | screen:dump       | screen         | TiScreenDump                                |
   | get:<varName>     | send:<varName> | sends the <varName> to Ti                   |
   | play:<tuneString> |                | plays the <tuneString> onto Expander BUZZER |
   |                   | quit           | exit from Shell                             |
-  |                   | halt           | shutdown Expander MCU                       |
+  | halt:             | halt           | shutdown Expander MCU                       |
   | list:             | ls [-s]        | list files to screen/curStream              |
   |                   | /send          | send tiVar to Expander (+ Ti - optional)    |
   |                   | hex:<varName>  | hexDump tiVar from Expander Storage         |
@@ -82,14 +82,22 @@
 
 
   - [x] Java telnet tool that works well w/ shell mode (mini-ncurses like / Gfx mode)
-  - [~] Java var sending tool (from 86th byte of a .v2x / .92x file / from 1st byte of a .12 file)
+  - [x] Java var sending tool (from 86th byte of a .v2x / .92x file / from 1st byte of a .12 file)
   - [ ] Java var getting tool (as cat varName - need cat vn / dump vn in shell)
   - [ ] Dummy mode to shell (auto -or- requires 'login' cmd ?)
 
 - **Known bugs** :
-  - multiple sendVar on Shell mode (Wifi & Serial) / handleCalc mode too
+  - [FIXED] multiple sendVar on Shell mode (Wifi & Serial) / handleCalc mode too
     - bug is not in ti_handleCalc()
     - even if screendump between -> need to reboot to send again
     - can always send pop / never can send popbin after
     - pbm could be in ti_header ....
     - THAT WAS : static array return in ti_chk -> FIXED
+
+- **Improvements** :
+  - ls -s better display on shell
+  - ./term.sh as CLI for TiVar copy (to Exp + opt. to calc)
+  - ./term.sh download TiVar from Expander
+  - OSD menu ?? -> w/ WiFi & ICE procedure .....
+  - Dummy mode to shell (w/ 'login' cmd ?)
+  - better 'menu' PRGM (more efficient to use...)

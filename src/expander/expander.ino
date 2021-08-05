@@ -320,6 +320,12 @@ void tiAction(char* action) {
         tft.println( "" );
         scRestore();
       #endif
+  } else if ( strncmp("screen:dump", action, 9) == 0 ) {
+      tilink.requestScreen(&Serial, true);
+  } else if ( strncmp("halt:", action, 5) == 0 ) {
+      shutdown();
+  } else if ( strncmp("ice:", action, 4) == 0 ) {
+      tilink.sendVar("rescue");
   } else {
       Serial.println("Unknown action");
   }
@@ -383,21 +389,8 @@ void setup() {
 long lastTime = millis();
 
 void loop() {
-
     // tilink.poll();
-
-    // if ( tilink.available() ) {
-    //     int b = tilink.read();
-    //     if ( b < ' ' || b > 128 ) {
-    //         Serial.write( 'x' );
-    //         Serial.print( b, HEX );
-    //         Serial.write( ' ' );
-    //     } else {
-    //         Serial.write( b );
-    //     }
-    //     tilink.resetLines();
-    // }
-
+    
     #if TTGO_TDISPLAY
       ttgo_loop();
     #endif
