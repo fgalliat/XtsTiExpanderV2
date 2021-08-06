@@ -150,9 +150,9 @@ bool Shell::handle(char* cmdline) {
         return true;
     } else if ( strncmp(cmdline, "ls", 2) == 0 ) {
         if ( strlen(cmdline) > 2 && strcmp("ls -s", cmdline) == 0 ) {
-            storage.lsToStream(curClient, SHELL_MODE_SERIAL);
-        } else {
             storage.lsToScreen();
+        } else {
+            storage.lsToStream(curClient, SHELL_MODE_SERIAL);
         }
         return true;
     } else if ( strncmp(cmdline, "screen", 6) == 0 ) {

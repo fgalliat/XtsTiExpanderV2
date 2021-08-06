@@ -94,7 +94,7 @@ public class ExpanderClient {
                 Utils.delay(10);
             }
             int r = in.read();
-            GUI.getInstance().addTextToConsole( ""+(char)r );
+            GUI.getInstance().addTextToConsole("" + (char) r);
             if ((char) r == '\n') {
                 break;
             }
@@ -108,6 +108,8 @@ public class ExpanderClient {
 
         int b0 = in.read();
         int b1 = in.read();
+
+        // GUI.getInstance().addTextToConsole("Size > " + Integer.toHexString(b0) + " " + Integer.toHexString(b1) + "\n");
 
         if ((char) b0 == '/' && (char) b1 == '!') {
             // BEWARE w/ that test ....
@@ -127,9 +129,12 @@ public class ExpanderClient {
 
         FileOutputStream fout = new FileOutputStream(f);
 
-        byte[] buff = new byte[128];
-        for (int i = 0; i < varSize; i++) {
-            int recv = in.read(buff, 0, min( 128, (int)(varSize - i) ));
+        final int blocLen = 128;
+        byte[] buff = new byte[blocLen];
+        for (int i = 0; i < varSize; i+=blocLen) {
+            int req = min(blocLen, (int) (varSize - i));
+            int recv = in.read(buff, 0, req);
+            // GUI.getInstance().addTextToConsole("@"+i+" req="+req+" got="+recv+"\n");
             fout.write(buff, 0, recv);
         }
 
