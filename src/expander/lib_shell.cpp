@@ -95,7 +95,8 @@ void Shell::begin(Stream* client) {
     opened = true;
     resetCurLine();
     setEcho(true);
-    curClient->println("Hello world");
+    // + Welcome is waited by CLI ShellTerminal
+    curClient->println("+ Welcome on XtsTiExpanderV2");
 }
 
 bool Shell::loop() {

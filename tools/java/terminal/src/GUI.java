@@ -13,6 +13,8 @@ public class GUI {
 
     protected static GUI instance;
 
+    protected boolean cliMode = false;
+
     protected GUI() {
     }
 
@@ -28,6 +30,10 @@ public class GUI {
     }
 
     public void addTextToConsole(String txt) {
+        if ( cliMode ) {
+            System.out.println(txt);
+            return;
+        }
         output.append(txt);
         String curText = output.getText();
         int lastCur = curText == null ? 0 : curText.length();
@@ -131,7 +137,14 @@ public class GUI {
     }
 
     public void lockInput(boolean b) {
+        if ( cliMode ) {
+            return;
+        }
         editLine.setEnabled(!b);
+    }
+
+    public void setCliMode(boolean b) {
+        cliMode = true;
     }
 
     // ********************************************************
@@ -198,17 +211,7 @@ public class GUI {
         if (currentFile == null) {
             return false;
         }
-        String lname = currentFile.toLowerCase().trim();
-        if (lname.isEmpty()) {
-            return false;
-        }
-        String lnameWoLastPart = lname.substring(0, lname.length() - 1);
-        if (lnameWoLastPart.endsWith(".92") || lnameWoLastPart.endsWith(".9x") || lnameWoLastPart.endsWith(".v2") || lnameWoLastPart.endsWith(".89")) {
-            // regular Texas Variable Files
-            return true;
-        }
-        // own storage
-        return false;
+        return ExpanderClient.defineIfNative(new File(currentFile.trim()));
     }
 
     public void buildReceivingPanel() {

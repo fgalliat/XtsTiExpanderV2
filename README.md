@@ -61,29 +61,30 @@
 
 - **Commands set** : 
 
-  | tiaction          | shell          | action                                      |
-  | ----------------- | -------------- | ------------------------------------------- |
-  | wifi:start        | wifistart      | start WiFi & telnet server                  |
-  | wifi:stop         | wifistop       | close WiFi & telnet                         |
-  |                   | wifipsk        | add WiFi config (interactive)               |
-  |                   | wifidel        | delete all WiFi configs                     |
-  | screen:swap       |                | swap OLED screen color scheme               |
-  | screen:dump       | screen         | TiScreenDump                                |
-  | get:<varName>     | send:<varName> | sends the <varName> to Ti                   |
-  | play:<tuneString> |                | plays the <tuneString> onto Expander BUZZER |
-  |                   | quit           | exit from Shell                             |
-  | halt:             | halt           | shutdown Expander MCU                       |
-  | list:             | ls [-s]        | list files to screen/curStream              |
-  |                   | /send          | send tiVar to Expander (+ Ti - optional)    |
-  |                   | hex:<varName>  | hexDump tiVar from Expander Storage         |
-  |                   | ice            | restore 'menu' from Expander Storage        |
+  | tiaction          | shell           | action                                       |
+  | ----------------- | --------------- | -------------------------------------------- |
+  | wifi:start        | wifistart       | start WiFi & telnet server                   |
+  | wifi:stop         | wifistop        | close WiFi & telnet                          |
+  |                   | wifipsk         | add WiFi config (interactive)                |
+  |                   | wifidel         | delete all WiFi configs                      |
+  | screen:swap       |                 | swap OLED screen color scheme                |
+  | screen:dump       | screen          | TiScreenDump                                 |
+  | get:<varName>     | send <varName>  | sends the <varName> to Ti (from Expander)    |
+  |                   | /send           | send tiVar to Expander (+ Ti - optional) BIN |
+  |                   | /recv <varName> | get tiVar from Expander                  BIN |
+  | play:<tuneString> |                 | plays the <tuneString> onto Expander BUZZER  |
+  |                   | quit            | exit from Shell                              |
+  | halt:             | halt            | shutdown Expander MCU                        |
+  | list:             | ls [-s]         | list files to screen/curStream               |
+  |                   | hex <varName>   | hexDump tiVar from Expander Storage          |
+  |                   | ice             | restore 'menu' from Expander Storage         |
 
 - **Needs set** : 
 
 
   - [x] Java telnet tool that works well w/ shell mode (mini-ncurses like / Gfx mode)
   - [x] Java var sending tool (from 86th byte of a .v2x / .92x file / from 1st byte of a .12 file)
-  - [ ] Java var getting tool (as cat varName - need cat vn / dump vn in shell)
+  - [x] Java var getting tool (as cat varName - need cat vn / dump vn in shell)
   - [ ] Dummy mode to shell (auto -or- requires 'login' cmd ?)
 
 - **Known bugs** :
@@ -95,9 +96,18 @@
     - THAT WAS : static array return in ti_chk -> FIXED
 
 - **Improvements** :
-  - ls -s better display on shell
-  - ./term.sh as CLI for TiVar copy (to Exp + opt. to calc)
-  - ./term.sh download TiVar from Expander
-  - OSD menu ?? -> w/ WiFi & ICE procedure .....
+  - ls better display on shell
   - Dummy mode to shell (w/ 'login' cmd ?)
-  - better 'menu' PRGM (more efficient to use...)
+  - better 'menu' PRGM -> see 'rescue'
+
+- **Shell WiFi terminal** :
+ - in tools/java/terminal/ build it then ./pack.sh
+ - *to receive from Expander Storage*
+ - java -jar expander.jar recv "192.168.1.xx" drmario
+ - *to send to Expander Storage*
+ - java -jar expander.jar send "192.168.1.xx" tivars/drmario.21 true
+ - *to run the GUI*
+ - java -jar expander.jar
+
+![Ti, Expander & GUI](./pictures/Gui_n_Expander.jpg)
+ 

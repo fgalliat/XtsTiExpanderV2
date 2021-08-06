@@ -22,6 +22,20 @@ public class ExpanderClient {
     protected InputStream in = null;
     protected OutputStream out = null;
 
+    public static boolean defineIfNative(File tiVarFile) {
+        String lname = tiVarFile.getName().toLowerCase().trim();
+        if (lname.isEmpty()) {
+            return false;
+        }
+        String lnameWoLastPart = lname.substring(0, lname.length() - 1);
+        if (lnameWoLastPart.endsWith(".92") || lnameWoLastPart.endsWith(".9x") || lnameWoLastPart.endsWith(".v2") || lnameWoLastPart.endsWith(".89")) {
+            // regular Texas Variable Files
+            return true;
+        }
+        // own storage
+        return false;
+    }
+
 
     public boolean connect(String host) throws Exception {
         sk = new Socket(host, port);
@@ -31,6 +45,11 @@ public class ExpanderClient {
     }
 
     public void disconnect() {
+        try {
+            out.write("quit\n".getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ex) {
+        }
+
         try {
             out.close();
         } catch (Exception ex) {
@@ -131,7 +150,7 @@ public class ExpanderClient {
 
         final int blocLen = 128;
         byte[] buff = new byte[blocLen];
-        for (int i = 0; i < varSize; i+=blocLen) {
+        for (int i = 0; i < varSize; i += blocLen) {
             int req = min(blocLen, (int) (varSize - i));
             int recv = in.read(buff, 0, req);
             // GUI.getInstance().addTextToConsole("@"+i+" req="+req+" got="+recv+"\n");
@@ -328,5 +347,19 @@ public class ExpanderClient {
         }
         return name;
     }
+
+    public void consumeHello() throws Exception {
+        String line = "";
+        while (true) {
+            while (in.available() <= 0) {
+                Utils.delay(10);
+            }
+            line += (char) in.read();
+            if (line.endsWith("\n") && line.startsWith("+ Welcome")) {
+                break;
+            }
+        }
+    }
+
 
 }
