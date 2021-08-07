@@ -6,6 +6,8 @@
 
 static int min(int a, int b) { return a < b ? a : b; }
 
+// ===================
+
 static int isBEndian = -1;
 
 static bool isBigEndian(){
@@ -48,8 +50,6 @@ static void copyFloatToBytes(unsigned char* memSeg, int address, float f) {
         }
     }
 }
-
-
 
 // ============================================
 
@@ -135,6 +135,42 @@ bool setDataValue(int varNum, const char* value) {
 
 // ============================================
 
+// start of User Funct // less are System Funct
+addr userFuncSpaceStart = 1024;
+
+const addr FUNCT_DISP = 0x0001;
+
+// ============================================
+
+enum argType { AT_VAR=0x00 };
+
+void doDisp( argType type, addr argAddr ) {
+    if ( type == AT_VAR ) {
+        uint8_t varType = mem[argAddr];
+        if ( varType == T_FLOAT ) {
+            float v = getFloatFromBytes(mem, argAddr+3);
+            printf("%g\n", v);
+            return;
+        }
+    }
+    printf("Unknown disp op \n");
+}
+
+
+// bundle args
+bool call(addr funct, argType argType0, addr argAddr0) {
+    if ( funct < userFuncSpaceStart ) {
+        // System Funct
+        if ( funct == FUNCT_DISP ) {
+            doDisp( argType0, argAddr0 );
+        }
+    } else {
+        // User Funct
+    }
+}
+
+// ============================================
+
 void dump(addr start=0, addr stop=MEM_SIZE) {
   int cpt = 0;
   for(addr i=start; i < stop; i++) {
@@ -160,6 +196,7 @@ int main(int argc, char** argv) {
     setDataValue(1, "Hello world");
  
     dump(0, 64);
+    call(FUNCT_DISP, AT_VAR, getDataAddr(0));
  
     return 0;
 }
