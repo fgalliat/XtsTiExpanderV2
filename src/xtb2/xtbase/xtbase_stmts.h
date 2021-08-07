@@ -420,7 +420,8 @@ void XTBaseApp::freeArgs(Token** args, int length, bool force) {
             if ( args[i] != NULL && args[i]->toBeDestroyed ) { my_free( args[i] ); args[i] = NULL; }
         }
     }
-    my_free(args, length * sizeof(Token*) );
+    // my_free(args, length * sizeof(Token*) );
+    my_free(args);
 } 
 
 bool XTBaseApp::treatRegularStatement(Statement* stmt) {

@@ -61,26 +61,26 @@ char* XTBaseApp::loadScript(char* prgmName, int &len) {
 
 XTBVariable* XTBaseApp::newVariable() {
 // printf("(ii) NEW VAR\n");
-    incHeapSize( sizeof( XTBVariable* ) );
+    incHeapSize( sizeof( XTBVariable ) );
     return new XTBVariable();
 }
 
 XTBLabel* XTBaseApp::newLabel() {
 // printf("(ii) NEW LBL\n");
-    incHeapSize( sizeof(XTBLabel*) );
+    incHeapSize( sizeof(XTBLabel) );
     return new XTBLabel();
 }
 
 XTBToken* XTBaseApp::newToken() {
 // printf("(ii) NEW TOKEN\n");
-    incHeapSize( sizeof(XTBToken*) );
+    incHeapSize( sizeof(XTBToken) );
     XTBToken* tk = new XTBToken();
     tk->toBeDestroyed = false;
     return tk;
 }
 
 XTBStatement* XTBaseApp::newStatement() {
-    incHeapSize( sizeof(XTBStatement*) );
+    incHeapSize( sizeof(XTBStatement) );
     return new XTBStatement();
 }
 
