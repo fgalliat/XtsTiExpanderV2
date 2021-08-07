@@ -12,8 +12,8 @@ typedef struct Label XTBLabel;
 struct Label
 {
     char name[8+1];
-    int index;
-    int addr;
+    uint8_t index;
+    uint16_t addr;
 };
 
 
@@ -22,32 +22,32 @@ struct Variable
 {
     char name[4+1];
     float fValue;
-    int index;
+    uint8_t index;
 };
 
 typedef struct Token XTBToken;
 struct Token
 {
-    int tkType;
+    uint8_t tkType;
     int iValue;
     float fValue;
-    int addr;
+    uint16_t addr;
     bool toBeDestroyed;
 };
 
 typedef struct Statement XTBStatement;
 struct Statement
 {
-    int type;
-    int addr; // statement adress
-    int dest; // destination address (for jumps)
+    uint8_t type;
+    uint16_t addr; // statement adress
+    int16_t dest; // destination address (for jumps) // can be -1
     Token** tokens;
-    int length;
+    uint8_t length;
 };
 
 typedef struct Jump XTBJump;
 struct Jump {
-    int type;
-    int from;
-    int to;
+    uint8_t type;
+    uint16_t from;
+    uint16_t to;
 };
