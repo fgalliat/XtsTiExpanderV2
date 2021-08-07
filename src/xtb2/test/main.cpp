@@ -151,6 +151,12 @@ void doDisp( argType type, addr argAddr ) {
             float v = getFloatFromBytes(mem, argAddr+3);
             printf("%g\n", v);
             return;
+        } else if ( varType == T_STRING ) {
+            int lenElem = mem[argAddr+2];
+            char str[lenElem+1];
+            memcpy(str, &mem[argAddr+3], lenElem);
+            printf("%s\n", str);
+            return;
         }
     }
     printf("Unknown disp op \n");
@@ -197,6 +203,7 @@ int main(int argc, char** argv) {
  
     dump(0, 64);
     call(FUNCT_DISP, AT_VAR, getDataAddr(0));
- 
+    call(FUNCT_DISP, AT_VAR, getDataAddr(0));
+
     return 0;
 }
