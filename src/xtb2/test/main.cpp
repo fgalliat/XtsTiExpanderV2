@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
  
     dump(0, 64);
     call(FUNCT_DISP, AT_VAR, getDataAddr(0));
-    call(FUNCT_DISP, AT_VAR, getDataAddr(0));
+    call(FUNCT_DISP, AT_VAR, getDataAddr(1));
 
     return 0;
 }
