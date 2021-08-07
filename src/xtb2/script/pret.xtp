@@ -1,0 +1,18 @@
+: Input "Emprunt Ke", emp
+: emp = emp * 1000
+:REM empI = emp "not working =>" " empI=emp+0, look that !"
+: empI = emp + 0
+: Disp it
+:REM Input "TAEG %", taeg
+: Input "Mensu e", M
+: tot = 0
+: For I, 1, 300
+:REM M = (emp * taeg / 100)
+:REM Disp M
+: tot = tot + M
+: emp = emp - M
+:REM Disp emp
+: End
+: Disp "Total : ", tot
+: cout = tot - empI 
+: Disp "Cout : ", cout, empI

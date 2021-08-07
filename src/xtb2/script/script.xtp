@@ -1,0 +1,21 @@
+: ClrHome
+: Disp "Hello World", cos(45), sin(45)
+: Disp "Batt : ", battLvl(), battAC()
+: Input "Age", age
+: If age < 18 : Goto "end"
+: Disp "Ok, I think your older enought"
+: Disp "Let me tell you a secret"
+: Disp "... press Enter"
+: Pause
+: ClrHome
+: For I,1,9
+: Disp "SantaClause may not exist !"
+: End
+: Disp ""
+: Disp "But maybe I'm wrong"
+: Lbl "end"
+: If age < 10 : Then
+: Disp "You should even not use"
+: Disp "this computer for now !"
+: End
+: pinMode( 3, 1)
