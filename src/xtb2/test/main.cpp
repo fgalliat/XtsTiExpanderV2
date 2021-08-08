@@ -75,7 +75,7 @@ struct Data {
 // ============================================
 
 // maybe rather @ end of mem ....
-addr userDataSpaceStart = 0;
+addr userDataSpaceStart = 0; // FIXME
 
 int userDataCounter = 0;
 
@@ -146,7 +146,7 @@ bool setDataValue(int varNum, const char* value) {
 // ============================================
 
 // start of User Funct // less are System Funct
-addr userFuncSpaceStart = 1024;
+addr userFuncSpaceStart = 1024; // FIXME
 
 const addr FUNCT_DISP = 0x0001;
 
@@ -180,14 +180,14 @@ Register* A = buildReg();
 Register* HL = buildReg();
 
 Register* getReg(int num) {
-    if (num == 0) return A;
-    if (num == 1) return HL;
+    if (num == 1) return A;
+    if (num == 2) return HL;
     return NULL;
 }
 
 // ============================================
 
-enum argType : uint8_t { AT_VAR=0x00, AT_REG, AT_KST };
+enum argType : uint8_t { AT_NONE=0x00, AT_VAR, AT_REG, AT_KST };
 
 struct Arg {
     argType type;
@@ -216,7 +216,7 @@ Arg* buildArg(Register* reg) {
   Arg* arg = new Arg();
   arg->type = AT_REG;
   arg->data = makeMemSeg(1);
-  arg->data[0] = (reg == A ? 0:1);
+  arg->data[0] = (reg == A ? 1:2); // FIXME Reg index
   return arg;
 }
 
@@ -225,6 +225,17 @@ void freeArg(Arg* arg) {
     free(arg);
 }
 
+void writeArgToMem( addr &curAddr, Arg* arg ) {
+    mem[curAddr++] = arg->type;
+    int size = 0;
+    if ( arg->type == AT_KST ) { size = 4; }
+    if ( arg->type == AT_VAR ) { size = 2; }
+    if ( arg->type == AT_REG ) { size = 1; }
+    for (int i=0; i < size; i++) {
+        // curAddr++ is mandatory behavior
+        mem[curAddr++] = arg->data[i];
+    }
+}
 
 void doDisp( Arg* arg ) {
     argType type = arg->type;
@@ -266,6 +277,7 @@ bool call(addr funct, Arg* arg0) {
         // User Funct
     }
     freeArg(arg0);
+    return true;
 }
 
 // ============================================
@@ -290,6 +302,27 @@ void dump(addr start=0, addr stop=MEM_SIZE) {
 
 // ============================================
 
+addr userCodeSpaceStart = 2048; // FIXME
+addr curCodePosition = userCodeSpaceStart;
+
+enum instr : uint8_t { 
+    INSTR_NOOP=0x00, 
+    INSTR_CALL, 
+    INSTR_SETREG,
+    INSTR_SETDATA };
+
+void addCallStatement(int argc, Arg** argv, bool autoDelete) {
+    mem[ curCodePosition++ ] = INSTR_CALL;
+    mem[ curCodePosition++ ] = (uint8_t)argc;
+    for(int i=0; i < argc; i++) {
+        writeArgToMem( curCodePosition, argv[i] );
+        if (autoDelete) freeArg( argv[i] );
+    }
+}
+
+
+// ============================================
+
 int main(int argc, char** argv) {
     addData(T_FLOAT);
     addData(T_STRING, 1, 25);
@@ -297,7 +330,7 @@ int main(int argc, char** argv) {
     setDataValue(0, 3.14);
     setDataValue(1, "Hello world");
  
-    dump(0, 64);
+    dump(userDataSpaceStart, 64);
     call(FUNCT_DISP, buildArg( getDataAddr(0)));
     call(FUNCT_DISP, buildArg( getDataAddr(1)));
 
@@ -305,6 +338,10 @@ int main(int argc, char** argv) {
 
     setRegValue(A, 65);
     call(FUNCT_DISP, buildArg(A));
+
+    Arg* args[] = { buildArg( getDataAddr(1)), buildArg(A) };
+    addCallStatement( 2, args, true );
+    dump(userCodeSpaceStart, userCodeSpaceStart+64);
 
 
     return 0;
