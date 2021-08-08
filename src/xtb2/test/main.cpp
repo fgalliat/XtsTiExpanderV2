@@ -220,6 +220,11 @@ Arg* buildArg(Register* reg) {
   return arg;
 }
 
+void freeArg(Arg* arg) {
+    free(arg->data); // see if keep it later Cf prealloc
+    free(arg);
+}
+
 
 void doDisp( Arg* arg ) {
     argType type = arg->type;
@@ -260,6 +265,7 @@ bool call(addr funct, Arg* arg0) {
     } else {
         // User Funct
     }
+    freeArg(arg0);
 }
 
 // ============================================
