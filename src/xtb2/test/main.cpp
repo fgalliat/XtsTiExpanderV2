@@ -61,7 +61,15 @@ uint8_t mem[MEM_SIZE];
 typedef uint16_t addr;
 
 // ============================================
-enum dataType { T_FLOAT=0x00, T_STRING };
+enum dataType : uint8_t { T_FLOAT=0x00, T_STRING };
+
+struct Data {
+    dataType type;
+    uint8_t lenM;
+    uint8_t lenL;
+    uint8_t* data;
+};
+
 // ============================================
 
 // maybe rather @ end of mem ....
@@ -142,7 +150,12 @@ const addr FUNCT_DISP = 0x0001;
 
 // ============================================
 
-enum argType { AT_VAR=0x00 };
+enum argType : uint8_t { AT_VAR=0x00 };
+
+struct Arg {
+    argType type;
+    uint8_t* data;
+};
 
 void doDisp( argType type, addr argAddr ) {
     if ( type == AT_VAR ) {
@@ -184,6 +197,9 @@ void dump(addr start=0, addr stop=MEM_SIZE) {
       char d = (c >=32 && c < 128) ? (char)c : '?';
       printf("%.2X%c ", c, d);
       cpt++;
+      if ( cpt == 8 ) {
+          printf(" ");
+      }
       if ( cpt == 16 ) {
           cpt = 0;
           printf("\n");
