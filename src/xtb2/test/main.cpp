@@ -63,7 +63,7 @@ typedef uint16_t addr;
 #define FLOAT_SIZE 4
 
 // ============================================
-enum dataType : uint8_t { T_FLOAT=0x00, T_STRING };
+enum dataType : uint8_t { T_NONE=0x00, T_FLOAT, T_STRING };
 
 struct Data {
     dataType type;
@@ -391,8 +391,8 @@ int main(int argc, char** argv) {
 
     // ======================================
     br();
-    Arg* args[] = { buildArg( getDataAddr(1)), buildArg(A) };
-    addCallStatement( FUNCT_DISP, 2, args, true );
+    Arg* args[] = { buildArg( getDataAddr(1)), buildArg(A), buildArg( getDataAddr(0)) };
+    addCallStatement( FUNCT_DISP, 3, args, true );
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
 
     run();
