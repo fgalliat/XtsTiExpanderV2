@@ -150,15 +150,41 @@ const addr FUNCT_DISP = 0x0001;
 
 // ============================================
 
-enum argType : uint8_t { AT_VAR=0x00 };
+// beware w/ that 
+uint8_t* makeMemSeg(int howMany) {
+    return (uint8_t*) malloc( howMany );
+}
+
+enum argType : uint8_t { AT_VAR=0x00, AT_REG, AT_KST };
 
 struct Arg {
     argType type;
     uint8_t* data;
 };
 
-void doDisp( argType type, addr argAddr ) {
+// do not use at runtime ... ?
+Arg* buildArg(float kstVal) {
+  Arg* arg = new Arg();
+  arg->type = AT_KST; // need a SubType ?
+  arg->data = makeMemSeg(4);
+  copyFloatToBytes(arg->data, 0, kstVal);
+  return arg;
+}
+
+Arg* buildArg(addr varAddr) {
+  Arg* arg = new Arg();
+  arg->type = AT_VAR;
+  arg->data = makeMemSeg(2);
+  arg->data[0] = varAddr >> 8;
+  arg->data[1] = varAddr % 256;
+  return arg;
+}
+
+
+void doDisp( Arg* arg ) {
+    argType type = arg->type;
     if ( type == AT_VAR ) {
+        addr argAddr = (arg->data[0] << 8) + arg->data[1];
         uint8_t varType = mem[argAddr];
         if ( varType == T_FLOAT ) {
             float v = getFloatFromBytes(mem, argAddr+3);
@@ -171,17 +197,21 @@ void doDisp( argType type, addr argAddr ) {
             printf("%s\n", str);
             return;
         }
+    } else if ( type == AT_KST ) {
+        float v = getFloatFromBytes( arg->data, 0 );
+        printf("%g\n", v);
+        return;
     }
     printf("Unknown disp op \n");
 }
 
 
 // bundle args
-bool call(addr funct, argType argType0, addr argAddr0) {
+bool call(addr funct, Arg* arg0) {
     if ( funct < userFuncSpaceStart ) {
         // System Funct
         if ( funct == FUNCT_DISP ) {
-            doDisp( argType0, argAddr0 );
+            doDisp( arg0 );
         }
     } else {
         // User Funct
@@ -218,8 +248,10 @@ int main(int argc, char** argv) {
     setDataValue(1, "Hello world");
  
     dump(0, 64);
-    call(FUNCT_DISP, AT_VAR, getDataAddr(0));
-    call(FUNCT_DISP, AT_VAR, getDataAddr(1));
+    call(FUNCT_DISP, buildArg( getDataAddr(0)));
+    call(FUNCT_DISP, buildArg( getDataAddr(1)));
+
+    call(FUNCT_DISP, buildArg((float)6.46));
 
     return 0;
 }
