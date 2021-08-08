@@ -237,6 +237,28 @@ void writeArgToMem( addr &curAddr, Arg* arg ) {
     }
 }
 
+Arg* readArgFromMem(addr &curAddr) {
+    Arg* arg = new Arg(); // FIXME ?
+    arg->type = (argType)mem[curAddr++];
+    int size = 0;
+    if ( arg->type == AT_KST ) { size = 4; }
+    if ( arg->type == AT_VAR ) { size = 2; }
+    if ( arg->type == AT_REG ) { size = 1; }
+    arg->data = &mem[curAddr]; // FIXME : sure w/ that ?
+    curAddr+= size;
+    return arg;
+}
+
+Arg** readArgsFromMem(int argc, addr &curAddr) {
+    if ( argc == 0 ) { return NULL; }
+    Arg** args = (Arg**)malloc(argc*sizeof( Arg* ));
+    for(int i=0; i < argc; i++) {
+        args[i] = readArgFromMem(curAddr);
+    }
+    return args;
+}
+
+
 void doDisp( Arg* arg ) {
     argType type = arg->type;
     if ( type == AT_VAR ) {
@@ -244,39 +266,46 @@ void doDisp( Arg* arg ) {
         uint8_t varType = mem[argAddr];
         if ( varType == T_FLOAT ) {
             float v = getFloatFromBytes(mem, argAddr+3);
-            printf("%g\n", v);
+            printf("%g", v);
             return;
         } else if ( varType == T_STRING ) {
             int lenElem = mem[argAddr+2];
             char str[lenElem+1];
             memcpy(str, &mem[argAddr+3], lenElem);
-            printf("%s\n", str);
+            printf("%s", str);
             return;
         }
     } else if ( type == AT_KST ) {
         float v = getFloatFromBytes( arg->data, 0 );
-        printf("%g\n", v);
+        printf("%g", v);
         return;
     } else if ( type == AT_REG ) {
         float v = getFloatFromBytes( getReg(arg->data[0])->data, 0 );
-        printf("%g\n", v);
+        printf("%g", v);
         return;
     }
     printf("Unknown disp op \n");
 }
 
+void doDisp(int argc, Arg** args) {
+    for(int i=0; i < argc; i++) {
+        doDisp(args[i]);
+        if ( i < argc-1 ) printf(" ");
+    }
+    printf("\n");
+}
 
 // bundle args
-bool call(addr funct, Arg* arg0) {
+bool call(addr funct, int argc, Arg** args) {
     if ( funct < userFuncSpaceStart ) {
         // System Funct
         if ( funct == FUNCT_DISP ) {
-            doDisp( arg0 );
+            doDisp( argc, args );
         }
     } else {
         // User Funct
     }
-    freeArg(arg0);
+    // freeArg(arg0);
     return true;
 }
 
@@ -311,8 +340,10 @@ enum instr : uint8_t {
     INSTR_SETREG,
     INSTR_SETDATA };
 
-void addCallStatement(int argc, Arg** argv, bool autoDelete) {
+void addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) {
     mem[ curCodePosition++ ] = INSTR_CALL;
+    mem[ curCodePosition++ ] = functionAddr >> 8;
+    mem[ curCodePosition++ ] = functionAddr % 256;
     mem[ curCodePosition++ ] = (uint8_t)argc;
     for(int i=0; i < argc; i++) {
         writeArgToMem( curCodePosition, argv[i] );
@@ -323,6 +354,25 @@ void addCallStatement(int argc, Arg** argv, bool autoDelete) {
 
 // ============================================
 
+void run() {
+    addr curAddr = userCodeSpaceStart;
+
+    if ( mem[curAddr] == INSTR_NOOP ) {
+        return;
+    } else if ( mem[curAddr] == INSTR_CALL ) {
+        curAddr++;
+        addr fct = (mem[curAddr++] << 8) + mem[curAddr++];
+        int argc = mem[curAddr++];
+        Arg** args = readArgsFromMem(argc, curAddr);
+        call(fct, argc, args);
+        free(args);
+    }
+}
+
+// ============================================
+
+void br() { printf("\n"); }
+
 int main(int argc, char** argv) {
     addData(T_FLOAT);
     addData(T_STRING, 1, 25);
@@ -331,18 +381,21 @@ int main(int argc, char** argv) {
     setDataValue(1, "Hello world");
  
     dump(userDataSpaceStart, 64);
-    call(FUNCT_DISP, buildArg( getDataAddr(0)));
-    call(FUNCT_DISP, buildArg( getDataAddr(1)));
+    // call(FUNCT_DISP, buildArg( getDataAddr(0)));
+    // call(FUNCT_DISP, buildArg( getDataAddr(1)));
 
-    call(FUNCT_DISP, buildArg((float)6.46));
+    // call(FUNCT_DISP, buildArg((float)6.46));
 
     setRegValue(A, 65);
-    call(FUNCT_DISP, buildArg(A));
+    // call(FUNCT_DISP, buildArg(A));
 
+    // ======================================
+    br();
     Arg* args[] = { buildArg( getDataAddr(1)), buildArg(A) };
-    addCallStatement( 2, args, true );
+    addCallStatement( FUNCT_DISP, 2, args, true );
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
 
+    run();
 
     return 0;
 }
