@@ -60,6 +60,8 @@ uint8_t mem[MEM_SIZE];
 
 typedef uint16_t addr;
 
+#define FLOAT_SIZE 4
+
 // ============================================
 enum dataType : uint8_t { T_FLOAT=0x00, T_STRING };
 
@@ -103,7 +105,7 @@ addr getDataAddr(int numVar) {
 bool addData(dataType type, int lenM=1, int lenL=-1) {
   if ( lenL < 0 ) {
       if  ( type == T_FLOAT ) {
-          lenL = 4;
+          lenL = FLOAT_SIZE;
       } else
       return false;
   }
@@ -155,6 +157,36 @@ uint8_t* makeMemSeg(int howMany) {
     return (uint8_t*) malloc( howMany );
 }
 
+// ============================================
+
+// no regType -> always float value ?
+struct Register {
+    uint8_t* data;
+};
+
+void setRegValue(Register* reg, float value) {
+    copyFloatToBytes(reg->data, 0, value);
+}
+
+Register* buildReg() {
+    Register* reg = new Register();
+    // later use specific memZone
+    reg->data = makeMemSeg(FLOAT_SIZE);
+    setRegValue(reg, 0.0);
+    return reg;
+}
+
+Register* A = buildReg();
+Register* HL = buildReg();
+
+Register* getReg(int num) {
+    if (num == 0) return A;
+    if (num == 1) return HL;
+    return NULL;
+}
+
+// ============================================
+
 enum argType : uint8_t { AT_VAR=0x00, AT_REG, AT_KST };
 
 struct Arg {
@@ -166,7 +198,7 @@ struct Arg {
 Arg* buildArg(float kstVal) {
   Arg* arg = new Arg();
   arg->type = AT_KST; // need a SubType ?
-  arg->data = makeMemSeg(4);
+  arg->data = makeMemSeg(FLOAT_SIZE);
   copyFloatToBytes(arg->data, 0, kstVal);
   return arg;
 }
@@ -177,6 +209,14 @@ Arg* buildArg(addr varAddr) {
   arg->data = makeMemSeg(2);
   arg->data[0] = varAddr >> 8;
   arg->data[1] = varAddr % 256;
+  return arg;
+}
+
+Arg* buildArg(Register* reg) {
+  Arg* arg = new Arg();
+  arg->type = AT_REG;
+  arg->data = makeMemSeg(1);
+  arg->data[0] = (reg == A ? 0:1);
   return arg;
 }
 
@@ -199,6 +239,10 @@ void doDisp( Arg* arg ) {
         }
     } else if ( type == AT_KST ) {
         float v = getFloatFromBytes( arg->data, 0 );
+        printf("%g\n", v);
+        return;
+    } else if ( type == AT_REG ) {
+        float v = getFloatFromBytes( getReg(arg->data[0])->data, 0 );
         printf("%g\n", v);
         return;
     }
@@ -252,6 +296,10 @@ int main(int argc, char** argv) {
     call(FUNCT_DISP, buildArg( getDataAddr(1)));
 
     call(FUNCT_DISP, buildArg((float)6.46));
+
+    setRegValue(A, 65);
+    call(FUNCT_DISP, buildArg(A));
+
 
     return 0;
 }
