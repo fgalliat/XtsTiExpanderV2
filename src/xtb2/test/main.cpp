@@ -124,7 +124,7 @@ addr getDataAddr(int numVar) {
   return curAddr;
 }
 
-bool addData(dataType type, int lenM=1, int lenL=-1) {
+addr addData(dataType type, int lenM=1, int lenL=-1) {
   if ( lenL < 0 ) {
       if  ( type == T_FLOAT ) {
           lenL = FLOAT_SIZE;
@@ -136,6 +136,7 @@ bool addData(dataType type, int lenM=1, int lenL=-1) {
   
   // FIXME : handle overflow
   addr varAddr = getDataAddr( userDataCounter );
+  addr varStart = varAddr;
 
 //   printf("%d\n", varAddr);
 
@@ -145,7 +146,7 @@ bool addData(dataType type, int lenM=1, int lenL=-1) {
   // reserve ( lenM * lenL ) bytes for data
 
   userDataCounter++;
-  return true;
+  return varStart;
 }
 
 bool setDataValue(addr varAddr, float value) {
@@ -164,6 +165,15 @@ bool setDataValue(addr varAddr, uint8_t bte) {
   return true;   
 }
 
+bool setDataValue(addr varAddr, const char* value) {
+  varAddr++; // type
+  varAddr++; // lenM
+  varAddr++; // lenL -- FIXME check size Vs value size
+  int len = strlen( value );
+  memcpy(&mem[varAddr], &value[0], len);
+  return true;   
+}
+
 float getFloatDataValue(addr varAddr) {
   varAddr++; // type -- FIXME check type ?
   varAddr++; // lenM
@@ -178,26 +188,21 @@ uint8_t getByteDataValue(addr varAddr) {
   return mem[varAddr++];
 }
 
-bool setDataValue(int varNum, float value) {
-  addr varAddr = getDataAddr( varNum );
-  setDataValue(varAddr, value);
-  return true;   
-}
+// bool setDataValue(int varNum, float value) {
+//   addr varAddr = getDataAddr( varNum );
+//   setDataValue(varAddr, value);
+//   return true;   
+// }
 
-bool setDataValue(int varNum, const char* value) {
-  addr varAddr = getDataAddr( varNum );
-  varAddr++; // type
-  varAddr++; // lenM
-  varAddr++; // lenL -- FIXME check size Vs value size
-  int len = strlen( value );
-  memcpy(&mem[varAddr], &value[0], len);
-  return true;   
-}
+// bool setDataValue(int varNum, const char* value) {
+//   addr varAddr = getDataAddr( varNum );
+//   return setDataValue(varAddr, value);   
+// }
 
-bool setDataValue(int varNum, uint8_t bte) {
-  addr varAddr = getDataAddr( varNum );
-  return setDataValue(varAddr, bte);   
-}
+// bool setDataValue(int varNum, uint8_t bte) {
+//   addr varAddr = getDataAddr( varNum );
+//   return setDataValue(varAddr, bte);   
+// }
 
 // ============================================
 
@@ -451,13 +456,13 @@ void run() {
 void br() { printf("\n"); }
 
 int main(int argc, char** argv) {
-    addData(T_FLOAT);
-    addData(T_STRING, 1, 25);
-    addData(T_BYTE);
+    addr var_i = addData(T_FLOAT);
+    addr var_str = addData(T_STRING, 1, 25);
+    addr var_b = addData(T_BYTE);
 
-    setDataValue(0, (float)3.14);
-    setDataValue(1, "Hello world");
-    setDataValue(2, (uint8_t)0xFE);
+    setDataValue(var_i, (float)3.14);
+    setDataValue(var_str, "Hello world");
+    setDataValue(var_b, (uint8_t)0xFE);
  
     dump(userDataSpaceStart, 64);
     // call(FUNCT_DISP, buildArg( getDataAddr(0)));
@@ -470,20 +475,20 @@ int main(int argc, char** argv) {
 
     // ======================================
     br();
-    Arg* args[] = { buildArg( getDataAddr(1)), 
+    Arg* args[] = { buildArg( var_str), 
                     buildArg(A), 
-                    buildArg( getDataAddr(0)), 
-                    buildArg( getDataAddr(2)) };
+                    buildArg( var_i), 
+                    buildArg( var_b) };
     addCallStatement( FUNCT_DISP, 4, args, true );
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
 
     // 
     br();
-    addIncDataStatement( getDataAddr(0), 12.7 );
-    addIncDataStatement( getDataAddr(2), -128 );
+    addIncDataStatement( var_i, 12.7 );
+    addIncDataStatement( var_b, -128 );
 
-    Arg* args2[] = { buildArg( getDataAddr(0)), 
-                    buildArg( getDataAddr(2)) };
+    Arg* args2[] = { buildArg( var_i), 
+                    buildArg( var_b) };
     addCallStatement( FUNCT_DISP, 2, args2, true );
 
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
