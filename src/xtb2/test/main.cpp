@@ -3,6 +3,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "stdint.h"
+#include "time.h"
 
 static int min(int a, int b) { return a < b ? a : b; }
 
@@ -220,8 +221,10 @@ float getNumDataValue(addr dataAddr) {
 addr userFuncSpaceStart = 1024; // FIXME
 
 const addr FUNCT_DISP   = 0x0001;
-const addr FUNCT_STRCAT = 0x0002;
-const addr FUNCT_STRUPPER = 0x0003;
+const addr FUNCT_RAND   = 0x0003;
+const addr FUNCT_COS    = 0x0004;
+const addr FUNCT_STRCAT = 0x0010;
+const addr FUNCT_STRUPPER = 0x0011;
 
 // ============================================
 
@@ -436,6 +439,15 @@ void doStrUpper(int argc, Arg** args) {
 
 // **************************
 
+float rndF() {
+    return (float) (rand() % 1000) / (float)1000.0;
+}
+
+// in degs
+float cos(int value) {
+    return 0.5;
+}
+
 bool call(addr funct, int argc, Arg** args) {
     if ( funct < userFuncSpaceStart ) {
         // System Funct
@@ -445,6 +457,11 @@ bool call(addr funct, int argc, Arg** args) {
             doStrCat( argc, args );
         } else if ( funct == FUNCT_STRUPPER ) {
             doStrUpper( argc, args );
+        } else if ( funct == FUNCT_RAND ) {
+            setRegValue(HL, rndF() );
+        } else if ( funct == FUNCT_COS ) {
+            if ( argc != 1 ) { return false; }
+            setRegValue(HL, cos( (int)getNumValue(args[0]) ) );
         }
     } else {
         // User Funct
@@ -675,6 +692,9 @@ void br() { printf("\n"); }
 void disp(const char* str) { printf("%s\n", str); }
 
 int main(int argc, char** argv) {
+    // C Desktop specific
+    srand(time(NULL));
+
     addr var_i = addData(T_FLOAT);
     addr var_str = addData(T_STRING, 1, 25);
     addr var_b = addData(T_BYTE);
@@ -739,12 +759,18 @@ int main(int argc, char** argv) {
     Arg* args5[] = { buildArg(var_str) };
     addCallStatement( FUNCT_DISP, 1, args5, true );
 
+    // i = i + 2.0
     addCalcStatement( buildArg(var_i), OPCALC_PLUS, buildArg((float)2.0) );
-    // Set i, A
     addSetDataStatement( var_i, A );
 
-    Arg* args6[] = { buildArg(A) };
+    addCallStatement( FUNCT_RAND, 0, NULL );
+    Arg* args6[] = { buildArg(HL) };
     addCallStatement( FUNCT_DISP, 1, args6, true );
+
+    Arg* args63[] = { buildArg((float)45) };
+    addCallStatement( FUNCT_COS, 1, args63, true );
+    Arg* args65[] = { buildArg(HL) };
+    addCallStatement( FUNCT_DISP, 1, args65, true );
 
     Arg* args7[] = { buildArg(var_i) };
     addCallStatement( FUNCT_DISP, 1, args7, true );
