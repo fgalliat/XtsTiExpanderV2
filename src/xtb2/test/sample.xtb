@@ -1,0 +1,24 @@
+// xtb2 Level 1
+
+string[25] str
+byte bte
+float f
+
+float tmp
+
+str = "Hello World"
+bte = 0xA0
+f = 3.141596
+
+tmp = cos 45
+tmp = tmp * rand()
+f = f + tmp
+
+disp bte str f
+
+lbl loop
+ f = 0
+ disp f
+ inc f
+ if f < 5 goto loop
+disp "finished"
