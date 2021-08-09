@@ -396,6 +396,8 @@ void doStrCat(int argc, Arg** args) {
 
     char* str = getStringDataValue( varDest );
     for(int i=1; i < argc; i++) {
+        // BE Sure to start BEFORE next DataDescription
+        // strlen can be bigger than destData end
         if ( args[i]->type == AT_VAR ) {
             addr srcAddr = (args[i]->data[0] << 8) + args[i]->data[1];
             if ( mem[srcAddr] != T_STRING ) {
@@ -442,7 +444,6 @@ bool call(addr funct, int argc, Arg** args) {
     } else {
         // User Funct
     }
-    // freeArg(arg0);
     return true;
 }
 
@@ -470,6 +471,16 @@ enum opComp : uint8_t {
     OPCOMP_EQ,
     OPCOMP_NEQ
 };
+
+enum opCalc : uint8_t {
+    OPCALC_NONE = 0x00,
+    OPCALC_PLUS,
+    OPCALC_MINUS,
+    OPCALC_MUL,
+    OPCALC_DIV
+};
+
+
 
 bool _compare(Arg* arg1, opComp op, Arg* arg2) {
   float value1 = getNumValue( arg1 );
@@ -503,15 +514,16 @@ addr curCodePosition = userCodeSpaceStart;
 
 enum instr : uint8_t { 
     INSTR_NOOP=0x00, 
-    INSTR_CALL, 
-    INSTR_SETREG,
-    INSTR_SETDATA,
-    INSTR_INCDATA,
-    INSTR_TEST,
-    INSTR_JMPAT, // JuMP when reg A is True 
+    INSTR_CALL,      // call a function (store in RegHL if needed)
+    INSTR_COMP,      // COMPute then store in RegA
+    INSTR_SETREG, 
+    INSTR_SETDATA,   // take RegA then Store to a Variable/Data (ex after COMPute)
+    INSTR_INCDATA,   // increment -or- decrement a Data
+    INSTR_TEST,      // test a num condition then store into RegA
+    INSTR_JMPAT,     // JuMP when reg A is True 
 };
 
-addr addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) {
+addr addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete=true) {
     addr start = curCodePosition;
     mem[ curCodePosition++ ] = INSTR_CALL;
     mem[ curCodePosition++ ] = functionAddr >> 8;
