@@ -1,110 +1,10 @@
 // ============================================
-#include "stdio.h"
-#include "string.h"
-#include "stdlib.h"
-#include "stdint.h"
-#include "time.h"
+#include "globals.h"
 
-static int min(int a, int b) { return a < b ? a : b; }
 
-// ===================
-
-static int isBEndian = -1;
-
-static bool isBigEndian(){
-    if ( isBEndian > -1 ) { return isBEndian == 1; } 
-    int number = 1;
-    isBEndian = (*(char*)&number != 1) ? 1 : 0;
-    return isBEndian == 1;
-}
-
-static float getFloatFromBytes(unsigned char* memSeg, int address) {
-    char bytes[sizeof(float)];
-
-    if( isBigEndian() ){
-       for(int i=0;i<sizeof(float);i++) {
-          bytes[sizeof(float)-i] = memSeg[address+i];
-        }
-    }
-    else{
-       for(int i=0;i<sizeof(float);i++) {
-          bytes[i] = memSeg[address+i];
-        }
-    }
-    float result;
-    memcpy(&result, bytes, sizeof(float));
-    return result;
-}
-
-static void copyFloatToBytes(unsigned char* memSeg, int address, float f) {
-    int float_tlen = sizeof(float); // 4 bytes on Arduino
-    char data[float_tlen];
-    memcpy(data, &f, sizeof f);    // send data
-    bool bigEndian = isBigEndian();
-    for(int i=0; i < float_tlen; i++) {
-        if ( bigEndian ) {
-            //                                       v ne manque t'il pas un -1 ???
-            memSeg[ address+i ] = data[float_tlen - i];
-        }
-        else {
-            memSeg[ address+i ] = data[i];
-        }
-    }
-}
 
 // ============================================
-
-// 64KB -> 16b addr
-#define MEM_SIZE 65535
-
-uint8_t mem[MEM_SIZE];
-
-typedef uint16_t addr;
-
-#define FLOAT_SIZE 4
-#define BYTE_SIZE 1
-
-// ============================================
-
-void dump(addr start=0, addr stop=MEM_SIZE) {
-  int cpt = 0;
-  for(addr i=start; i < stop; i++) {
-      uint8_t c = mem[i];
-      char d = (c >=32 && c < 128) ? (char)c : '?';
-      printf("%.2X%c ", c, d);
-      cpt++;
-      if ( cpt == 8 ) {
-          printf(" ");
-      }
-      if ( cpt == 16 ) {
-          cpt = 0;
-          printf("\n");
-      }
-  }
-  if ( cpt != 0 ) { printf("\n"); }
-}
-
-// ============================================
-// T_BYTE -> allow : byte, char & bool
-enum dataType : uint8_t { T_NONE=0x00, T_FLOAT, T_STRING, T_BYTE };
-
-struct Data {
-    dataType type;
-    uint8_t lenM;
-    uint8_t lenL;
-    uint8_t* data;
-};
-
-// ============================================
-
-// maybe rather @ end of mem ....
-addr userDataSpaceStart = 0; // FIXME
-
 int userDataCounter = 0;
-
-// ---- temp def
-#define varI 0
-#define varF 1
 
 // check retType
 addr seekData(addr addr) {
@@ -150,134 +50,15 @@ addr addData(dataType type, int lenM=1, int lenL=-1) {
   return varStart;
 }
 
-bool setDataValue(addr varAddr, float value) {
-  varAddr++; // type -- FIXME check type ?
-  varAddr++; // lenM
-  varAddr++; // lenL
-  copyFloatToBytes(mem, varAddr, value);
-  return true;   
-}
-
-bool setDataValue(addr varAddr, uint8_t bte) {
-  varAddr++; // type
-  varAddr++; // lenM
-  varAddr++; // lenL -- FIXME check size Vs value size
-  mem[varAddr] = bte;
-  return true;   
-}
-
-bool setDataValue(addr varAddr, const char* value) {
-  varAddr++; // type
-  varAddr++; // lenM
-  varAddr++; // lenL -- FIXME check size Vs value size
-  int len = strlen( value );
-  memcpy(&mem[varAddr], &value[0], len);
-  return true;   
-}
-
 addr addDataStringConstant(const char* str) {
     addr place = addData(T_STRING, 1, strlen(str));
     setDataValue(place, str);
     return place;
 }
 
-float getFloatDataValue(addr varAddr) {
-  varAddr++; // type -- FIXME check type ?
-  varAddr++; // lenM
-  varAddr++; // lenL
-  return getFloatFromBytes(mem, varAddr);
-}
 
-char* getStringDataValue(addr varAddr) {
-  varAddr++; // type -- FIXME check type ?
-  varAddr++; // lenM
-  varAddr++; // lenL
-  return (char*)&mem[varAddr];
-}
-
-uint8_t getByteDataValue(addr varAddr) {
-  varAddr++; // type -- FIXME check type ?
-  varAddr++; // lenM
-  varAddr++; // lenL
-  return mem[varAddr++];
-}
-
-float getNumDataValue(addr dataAddr) {
-  dataType dt = (dataType)mem[dataAddr];
-  if ( dt == T_STRING || dt == T_NONE ) { return -1.0; }
-  if ( dt == T_FLOAT ) {
-    float v = getFloatDataValue(dataAddr);
-    return v;
-  } else if ( dt == T_BYTE ) {
-      uint8_t v = getByteDataValue(dataAddr);
-      return (float)v;
-  }
-  return -1.0;
-}
 
 // ============================================
-
-// start of User Funct // less are System Funct
-addr userFuncSpaceStart = 1024; // FIXME
-
-const addr FUNCT_DISP   = 0x0001;
-const addr FUNCT_RAND   = 0x0003;
-const addr FUNCT_COS    = 0x0004;
-const addr FUNCT_STRCAT = 0x0010;
-const addr FUNCT_STRUPPER = 0x0011;
-
-// ============================================
-
-// beware w/ that 
-uint8_t* makeMemSeg(int howMany) {
-    return (uint8_t*) malloc( howMany );
-}
-
-// ============================================
-
-// no regType -> always float value ?
-struct Register {
-    uint8_t* data;
-};
-
-void setRegValue(Register* reg, float value) {
-    copyFloatToBytes(reg->data, 0, value);
-}
-
-float getRegValue(Register* reg) {
-    return getFloatFromBytes(reg->data, 0);
-}
-
-Register* buildReg() {
-    Register* reg = new Register();
-    // later use specific memZone
-    reg->data = makeMemSeg(FLOAT_SIZE);
-    setRegValue(reg, 0.0);
-    return reg;
-}
-
-Register* A = buildReg();
-Register* HL = buildReg();
-
-Register* getReg(int num) {
-    if (num == 1) return A;
-    if (num == 2) return HL;
-    return NULL;
-}
-
-int getRegNum(Register* r) {
-    if ( r == A ) { return 1; }
-    return 2;
-}
-
-// ============================================
-
-enum argType : uint8_t { AT_NONE=0x00, AT_VAR, AT_REG, AT_KST };
-
-struct Arg {
-    argType type;
-    uint8_t* data;
-};
 
 // do not use at runtime ... ?
 Arg* buildArg(float kstVal) {
@@ -322,33 +103,7 @@ void writeArgToMem( addr &curAddr, Arg* arg ) {
     }
 }
 
-Arg* readArgFromMem(addr &curAddr) {
-    Arg* arg = new Arg(); // FIXME ?
-    arg->type = (argType)mem[curAddr++];
-    int size = 0;
-    if ( arg->type == AT_KST ) { size = 4; }
-    if ( arg->type == AT_VAR ) { size = 2; }
-    if ( arg->type == AT_REG ) { size = 1; }
-    arg->data = &mem[curAddr]; // FIXME : sure w/ that ?
-    curAddr+= size;
-    return arg;
-}
 
-Arg** readArgsFromMem(int argc, addr &curAddr) {
-    if ( argc == 0 ) { return NULL; }
-    Arg** args = (Arg**)malloc(argc*sizeof( Arg* ));
-    for(int i=0; i < argc; i++) {
-        args[i] = readArgFromMem(curAddr);
-    }
-    return args;
-}
-
-float getNumValue(Arg* arg) {
-    if ( arg->type == AT_KST ) { return getFloatFromBytes( arg->data, 0 ); }
-    if ( arg->type == AT_VAR ) { return getNumDataValue( (arg->data[0]<<8) + arg->data[1] ); }
-    if ( arg->type == AT_REG ) { return getRegValue( getReg( arg->data[0] ) ); } 
-    return -1.0;
-}
 
 // ======================
 
@@ -439,15 +194,6 @@ void doStrUpper(int argc, Arg** args) {
 
 // **************************
 
-float rndF() {
-    return (float) (rand() % 1000) / (float)1000.0;
-}
-
-// in degs
-float cos(int value) {
-    return 0.5;
-}
-
 bool call(addr funct, int argc, Arg** args) {
     if ( funct < userFuncSpaceStart ) {
         // System Funct
@@ -484,24 +230,8 @@ bool incData(addr dataAddr, float delta) {
   return true;
 }
 
-enum opComp : uint8_t {
-    OPCOMP_NONE = 0x00,
-    OPCOMP_GT,
-    OPCOMP_LT,
-    OPCOMP_GTE,
-    OPCOMP_LTE,
-    OPCOMP_EQ,
-    OPCOMP_NEQ
-};
 
-enum opCalc : uint8_t {
-    OPCALC_NONE = 0x00,
-    OPCALC_PLUS,
-    OPCALC_MINUS,
-    OPCALC_MUL,
-    OPCALC_DIV
-};
-
+// ------------------
 
 
 bool _compare(Arg* arg1, opComp op, Arg* arg2) {
@@ -550,19 +280,7 @@ bool doCompute(Arg* arg1, opCalc op, Arg* arg2) {
 
 // ============================================
 
-addr userCodeSpaceStart = 2048; // FIXME
 addr curCodePosition = userCodeSpaceStart;
-
-enum instr : uint8_t { 
-    INSTR_NOOP=0x00, 
-    INSTR_CALL,      // call a function (store in RegHL if needed)
-    INSTR_COMP,      // COMPute then store in RegA
-    INSTR_SETREG, 
-    INSTR_SETDATA,   // take RegA then Store to a Variable/Data (ex after COMPute)
-    INSTR_INCDATA,   // increment -or- decrement a Data
-    INSTR_TEST,      // test a num condition then store into RegA
-    INSTR_JMPAT,     // JuMP when reg A is True 
-};
 
 addr addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete=true) {
     addr start = curCodePosition;
@@ -707,13 +425,8 @@ int main(int argc, char** argv) {
  
     disp(" = UserData Space =");
     dump(userDataSpaceStart, 64);
-    // call(FUNCT_DISP, buildArg( getDataAddr(0)));
-    // call(FUNCT_DISP, buildArg( getDataAddr(1)));
-
-    // call(FUNCT_DISP, buildArg((float)6.46));
 
     setRegValue(A, 65);
-    // call(FUNCT_DISP, buildArg(A));
 
     // ======================================
     br();
