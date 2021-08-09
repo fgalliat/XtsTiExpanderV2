@@ -188,21 +188,18 @@ uint8_t getByteDataValue(addr varAddr) {
   return mem[varAddr++];
 }
 
-// bool setDataValue(int varNum, float value) {
-//   addr varAddr = getDataAddr( varNum );
-//   setDataValue(varAddr, value);
-//   return true;   
-// }
-
-// bool setDataValue(int varNum, const char* value) {
-//   addr varAddr = getDataAddr( varNum );
-//   return setDataValue(varAddr, value);   
-// }
-
-// bool setDataValue(int varNum, uint8_t bte) {
-//   addr varAddr = getDataAddr( varNum );
-//   return setDataValue(varAddr, bte);   
-// }
+float getNumDataValue(addr dataAddr) {
+  dataType dt = (dataType)mem[dataAddr];
+  if ( dt == T_STRING || dt == T_NONE ) { return -1.0; }
+  if ( dt == T_FLOAT ) {
+    float v = getFloatDataValue(dataAddr);
+    return v;
+  } else if ( dt == T_BYTE ) {
+      uint8_t v = getByteDataValue(dataAddr);
+      return (float)v;
+  }
+  return -1.0;
+}
 
 // ============================================
 
@@ -227,6 +224,10 @@ struct Register {
 
 void setRegValue(Register* reg, float value) {
     copyFloatToBytes(reg->data, 0, value);
+}
+
+float getRegValue(Register* reg) {
+    return getFloatFromBytes(reg->data, 0);
 }
 
 Register* buildReg() {
@@ -319,6 +320,15 @@ Arg** readArgsFromMem(int argc, addr &curAddr) {
     return args;
 }
 
+float getNumValue(Arg* arg) {
+    if ( arg->type == AT_KST ) { return getFloatFromBytes( arg->data, 0 ); }
+    if ( arg->type == AT_VAR ) { return getNumDataValue( (arg->data[0]<<8) + arg->data[1] ); }
+    if ( arg->type == AT_REG ) { return getRegValue( getReg( arg->data[0] ) ); } 
+    return -1.0;
+}
+
+// ======================
+
 
 void doDisp( Arg* arg ) {
     argType type = arg->type;
@@ -391,6 +401,41 @@ bool incData(addr dataAddr, float delta) {
   return true;
 }
 
+enum opComp : uint8_t {
+    OPCOMP_NONE = 0x00,
+    OPCOMP_GT,
+    OPCOMP_LT,
+    OPCOMP_GTE,
+    OPCOMP_LTE,
+    OPCOMP_EQ,
+    OPCOMP_NEQ
+};
+
+bool _compare(Arg* arg1, opComp op, Arg* arg2) {
+  float value1 = getNumValue( arg1 );
+  float value2 = getNumValue( arg2 );
+
+  if ( op == OPCOMP_EQ ) {
+      return ( value1 == value2 );
+  } else if ( op == OPCOMP_NEQ ) {
+      return ( value1 != value2 );
+  } else if ( op == OPCOMP_GT ) {
+      return ( value1 > value2 );
+  } else if ( op == OPCOMP_LT ) {
+      return ( value1 < value2 );
+  } else if ( op == OPCOMP_GTE ) {
+      return ( value1 >= value2 );
+  } else if ( op == OPCOMP_LTE ) {
+      return ( value1 <= value2 );
+  }
+  return false;
+}
+
+bool compare(Arg* arg1, opComp op, Arg* arg2) {
+    setRegValue(A, _compare( arg1, op, arg2 ) ? 1.0 : 0.0 );
+    return true;
+}
+
 // ============================================
 
 addr userCodeSpaceStart = 2048; // FIXME
@@ -401,9 +446,10 @@ enum instr : uint8_t {
     INSTR_CALL, 
     INSTR_SETREG,
     INSTR_SETDATA,
-    INSTR_INCDATA };
+    INSTR_INCDATA,
+    INSTR_TEST };
 
-void addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) {
+addr addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) {
     mem[ curCodePosition++ ] = INSTR_CALL;
     mem[ curCodePosition++ ] = functionAddr >> 8;
     mem[ curCodePosition++ ] = functionAddr % 256;
@@ -412,14 +458,28 @@ void addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) 
         writeArgToMem( curCodePosition, argv[i] );
         if (autoDelete) freeArg( argv[i] );
     }
+    return curCodePosition;
 }
 
-void addIncDataStatement(addr dataAddr, float delta) {
+addr addIncDataStatement(addr dataAddr, float delta=1.0) {
     mem[ curCodePosition++ ] = INSTR_INCDATA;
     mem[ curCodePosition++ ] = dataAddr >> 8;
     mem[ curCodePosition++ ] = dataAddr % 256;
     copyFloatToBytes(mem, curCodePosition, delta);
     curCodePosition += FLOAT_SIZE;
+    return curCodePosition;
+}
+
+addr addTestDataStatement(Arg* argComp1, opComp oper, Arg* argComp2, bool autoDelete=true) {
+    mem[ curCodePosition++ ] = INSTR_TEST;
+    writeArgToMem( curCodePosition, argComp1 );
+    mem[ curCodePosition++ ] = oper;
+    writeArgToMem( curCodePosition, argComp2 );
+    if ( autoDelete ) {
+        free(argComp1);
+        free(argComp2);
+    }
+    return curCodePosition;
 }
 
 // ============================================
@@ -439,14 +499,21 @@ void run() {
             // --- clean ...
             for(int i=0; i < argc; i++) { free(args[i]); }
             free(args);
-            // curAddr++;
         } else if ( mem[curAddr] == INSTR_INCDATA ) {
             curAddr++;
             addr dataAddr = (mem[curAddr++] << 8) + mem[curAddr++];
             float delta = getFloatFromBytes(mem, curAddr);
             curAddr += FLOAT_SIZE;
             incData(dataAddr, delta);
-            // curAddr++;
+        } else if ( mem[curAddr] == INSTR_TEST ) {
+            curAddr++;
+            Arg* arg1 = readArgFromMem(curAddr);
+            opComp oper = (opComp)mem[curAddr++];
+            Arg* arg2 = readArgFromMem(curAddr);
+            compare(arg1, oper, arg2); // feeds register A
+            // --- clean ...
+            free(arg1);
+            free(arg2);
         }
     }
 }
@@ -454,6 +521,7 @@ void run() {
 // ============================================
 
 void br() { printf("\n"); }
+void disp(const char* str) { printf("%s\n", str); }
 
 int main(int argc, char** argv) {
     addr var_i = addData(T_FLOAT);
@@ -464,6 +532,7 @@ int main(int argc, char** argv) {
     setDataValue(var_str, "Hello world");
     setDataValue(var_b, (uint8_t)0xFE);
  
+    disp(" = UserData Space =");
     dump(userDataSpaceStart, 64);
     // call(FUNCT_DISP, buildArg( getDataAddr(0)));
     // call(FUNCT_DISP, buildArg( getDataAddr(1)));
@@ -480,6 +549,7 @@ int main(int argc, char** argv) {
                     buildArg( var_i), 
                     buildArg( var_b) };
     addCallStatement( FUNCT_DISP, 4, args, true );
+    disp(" = Code Space =");
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
 
     // 
@@ -491,7 +561,24 @@ int main(int argc, char** argv) {
                     buildArg( var_b) };
     addCallStatement( FUNCT_DISP, 2, args2, true );
 
+    disp(" = Code Space =");
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
+
+    // ===========================
+    addTestDataStatement( buildArg(var_b), OPCOMP_GTE, buildArg((float)0x80) );
+
+    Arg* args3[] = { buildArg( A ) };
+    addCallStatement( FUNCT_DISP, 1, args3, true );
+
+    addIncDataStatement( var_b, 3 );
+    addTestDataStatement( buildArg(var_b), OPCOMP_GTE, buildArg((float)0x80) );
+
+    Arg* args4[] = { buildArg(var_b), buildArg( A ) };
+    addCallStatement( FUNCT_DISP, 2, args4, true );
+
+    disp(" = Code Space =");
+    dump(userCodeSpaceStart, userCodeSpaceStart+64);
+
     run();
 
     return 0;
