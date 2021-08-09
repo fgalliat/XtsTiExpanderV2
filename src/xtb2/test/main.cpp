@@ -447,9 +447,12 @@ enum instr : uint8_t {
     INSTR_SETREG,
     INSTR_SETDATA,
     INSTR_INCDATA,
-    INSTR_TEST };
+    INSTR_TEST,
+    INSTR_JMPAT, // JuMP when reg A is True 
+};
 
 addr addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) {
+    addr start = curCodePosition;
     mem[ curCodePosition++ ] = INSTR_CALL;
     mem[ curCodePosition++ ] = functionAddr >> 8;
     mem[ curCodePosition++ ] = functionAddr % 256;
@@ -458,19 +461,21 @@ addr addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) 
         writeArgToMem( curCodePosition, argv[i] );
         if (autoDelete) freeArg( argv[i] );
     }
-    return curCodePosition;
+    return start;
 }
 
 addr addIncDataStatement(addr dataAddr, float delta=1.0) {
+    addr start = curCodePosition;
     mem[ curCodePosition++ ] = INSTR_INCDATA;
     mem[ curCodePosition++ ] = dataAddr >> 8;
     mem[ curCodePosition++ ] = dataAddr % 256;
     copyFloatToBytes(mem, curCodePosition, delta);
     curCodePosition += FLOAT_SIZE;
-    return curCodePosition;
+    return start;
 }
 
 addr addTestDataStatement(Arg* argComp1, opComp oper, Arg* argComp2, bool autoDelete=true) {
+    addr start = curCodePosition;
     mem[ curCodePosition++ ] = INSTR_TEST;
     writeArgToMem( curCodePosition, argComp1 );
     mem[ curCodePosition++ ] = oper;
@@ -479,7 +484,15 @@ addr addTestDataStatement(Arg* argComp1, opComp oper, Arg* argComp2, bool autoDe
         free(argComp1);
         free(argComp2);
     }
-    return curCodePosition;
+    return start;
+}
+
+addr addJumpWhenAisTrue(addr codeAddr) {
+    addr start = curCodePosition;
+    mem[ curCodePosition++ ] = INSTR_JMPAT;
+    mem[ curCodePosition++ ] = codeAddr >> 8;
+    mem[ curCodePosition++ ] = codeAddr % 256;
+    return start;
 }
 
 // ============================================
@@ -514,6 +527,12 @@ void run() {
             // --- clean ...
             free(arg1);
             free(arg2);
+        } else if ( mem[curAddr] == INSTR_JMPAT ) { // jump whan A true
+            curAddr++;
+            addr jump = (mem[curAddr++] << 8) + mem[curAddr++];
+            if ( getRegValue( A ) >= 1.0 ) {
+                curAddr = jump; // do jump
+            }
         }
     }
 }
@@ -567,11 +586,12 @@ int main(int argc, char** argv) {
     // ===========================
     addTestDataStatement( buildArg(var_b), OPCOMP_GTE, buildArg((float)0x80) );
 
-    Arg* args3[] = { buildArg( A ) };
-    addCallStatement( FUNCT_DISP, 1, args3, true );
+    Arg* args3[] = { buildArg(var_b), buildArg( A ) };
+    addr src = addCallStatement( FUNCT_DISP, 2, args3, true );
 
-    addIncDataStatement( var_b, 3 );
-    addTestDataStatement( buildArg(var_b), OPCOMP_GTE, buildArg((float)0x80) );
+    addIncDataStatement( var_b );
+    addTestDataStatement( buildArg(var_b), OPCOMP_LT, buildArg((float)0x81) );
+    addJumpWhenAisTrue( src );
 
     Arg* args4[] = { buildArg(var_b), buildArg( A ) };
     addCallStatement( FUNCT_DISP, 2, args4, true );
