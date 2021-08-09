@@ -61,9 +61,11 @@ uint8_t mem[MEM_SIZE];
 typedef uint16_t addr;
 
 #define FLOAT_SIZE 4
+#define BYTE_SIZE 1
 
 // ============================================
-enum dataType : uint8_t { T_NONE=0x00, T_FLOAT, T_STRING };
+// T_BYTE -> allow : byte, char & bool
+enum dataType : uint8_t { T_NONE=0x00, T_FLOAT, T_STRING, T_BYTE };
 
 struct Data {
     dataType type;
@@ -106,6 +108,8 @@ bool addData(dataType type, int lenM=1, int lenL=-1) {
   if ( lenL < 0 ) {
       if  ( type == T_FLOAT ) {
           lenL = FLOAT_SIZE;
+      } else if  ( type == T_BYTE ) {
+          lenL = BYTE_SIZE;
       } else
       return false;
   }
@@ -140,6 +144,15 @@ bool setDataValue(int varNum, const char* value) {
   varAddr++; // lenL -- FIXME check size Vs value size
   int len = strlen( value );
   memcpy(&mem[varAddr], &value[0], len);
+  return true;   
+}
+
+bool setDataValue(int varNum, uint8_t bte) {
+  addr varAddr = getDataAddr( varNum );
+  varAddr++; // type
+  varAddr++; // lenM
+  varAddr++; // lenL -- FIXME check size Vs value size
+  mem[varAddr] = bte;
   return true;   
 }
 
@@ -274,6 +287,11 @@ void doDisp( Arg* arg ) {
             memcpy(str, &mem[argAddr+3], lenElem);
             printf("%s", str);
             return;
+        } else if ( varType == T_BYTE ) {
+            int lenElem = mem[argAddr+2];
+            uint8_t bte = mem[argAddr+3];
+            printf("0x%s%.2X", (bte < 16 ? " " : ""), bte );
+            return;
         }
     } else if ( type == AT_KST ) {
         float v = getFloatFromBytes( arg->data, 0 );
@@ -376,9 +394,11 @@ void br() { printf("\n"); }
 int main(int argc, char** argv) {
     addData(T_FLOAT);
     addData(T_STRING, 1, 25);
+    addData(T_BYTE);
 
-    setDataValue(0, 3.14);
+    setDataValue(0, (float)3.14);
     setDataValue(1, "Hello world");
+    setDataValue(2, (uint8_t)0xFE);
  
     dump(userDataSpaceStart, 64);
     // call(FUNCT_DISP, buildArg( getDataAddr(0)));
@@ -391,8 +411,11 @@ int main(int argc, char** argv) {
 
     // ======================================
     br();
-    Arg* args[] = { buildArg( getDataAddr(1)), buildArg(A), buildArg( getDataAddr(0)) };
-    addCallStatement( FUNCT_DISP, 3, args, true );
+    Arg* args[] = { buildArg( getDataAddr(1)), 
+                    buildArg(A), 
+                    buildArg( getDataAddr(0)), 
+                    buildArg( getDataAddr(2)) };
+    addCallStatement( FUNCT_DISP, 4, args, true );
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
 
     run();
