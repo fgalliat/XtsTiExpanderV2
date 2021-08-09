@@ -89,8 +89,9 @@ char* trim(char* str) {
   }
 
   if ( left > 0 || right < tlen-1 ) {
+    //   if (right < tlen-1) str[right] = 0x00; // before going to left
       if (left > 0      ) memmove(&str[0], &str[left], tlen-left);
-      if (right < tlen-1) str[right+1] = 0x00;
+      str[right] = 0x00;
   }
 
   return str;
@@ -167,7 +168,7 @@ void handleLine(char* line) {
             len = indexOf(descr, '=')+1;
         }
 
-        char* varName = trim( substring( descr, 0, len-1 ) );
+        char* varName = trim( substring( descr, 0, len ) );
         addNewVar(T_BYTE, varName);
 
         // FIXME .. freemem
@@ -178,15 +179,16 @@ void handleLine(char* line) {
             len = indexOf(descr, '=')+1;
         }
 
-        char* varName = trim( substring( descr, 0, len-1 ) );
+        char* varName = trim( substring( descr, 0, len ) );
         addNewVar(T_FLOAT, varName);
 
         // FIXME .. freemem
     } else if ( startsWith(line, "string[") ) {
         char* descr = &line[7];
         int dMax = indexOf(descr, ']')+1;
-        char* dStr = trim( substring( descr, 0, dMax-1 ) );
+        char* dStr = trim( substring( descr, 0, dMax ) );
         int ln = atoi(dStr);
+        printf("DLen is %d \n", ln);
         descr = &descr[dMax];
 
         int len = strlen(descr);
@@ -194,7 +196,7 @@ void handleLine(char* line) {
             len = indexOf(descr, '=')+1;
         }
 
-        char* varName = trim( substring( descr, 0, len-1 ) );
+        char* varName = trim( substring( descr, 0, len ) );
 
         addNewVar(T_STRING, varName, ln);
         // FIXME ..
