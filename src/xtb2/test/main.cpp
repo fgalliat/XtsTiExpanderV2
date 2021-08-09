@@ -221,6 +221,7 @@ addr userFuncSpaceStart = 1024; // FIXME
 
 const addr FUNCT_DISP   = 0x0001;
 const addr FUNCT_STRCAT = 0x0002;
+const addr FUNCT_STRUPPER = 0x0003;
 
 // ============================================
 
@@ -408,6 +409,24 @@ void doStrCat(int argc, Arg** args) {
     }
 }
 
+void doStrUpper(int argc, Arg** args) {
+    if ( argc < 1 ) { return; }
+    if ( args[0]->type != AT_VAR ) { return; }
+    addr varDest = (args[0]->data[0] << 8) + args[0]->data[1];
+    if ( mem[varDest] != T_STRING ) { return; }
+
+    // FIXME : beware of overflow
+
+    char* str = getStringDataValue( varDest );
+    int len = strlen(str); // beware of max Size (Cf non 0 terminated)
+
+    for(int i=0; i < len; i++) {
+        if ( str[i] >= 'a' && str[i] <= 'z' ) {
+            str[i] = str[i] - 'a' + 'A';
+        }
+    }
+}
+
 // **************************
 
 bool call(addr funct, int argc, Arg** args) {
@@ -417,6 +436,8 @@ bool call(addr funct, int argc, Arg** args) {
             doDisp( argc, args );
         } else if ( funct == FUNCT_STRCAT ) {
             doStrCat( argc, args );
+        } else if ( funct == FUNCT_STRUPPER ) {
+            doStrUpper( argc, args );
         }
     } else {
         // User Funct
@@ -639,6 +660,9 @@ int main(int argc, char** argv) {
 
     Arg* args45[] = { buildArg(var_str), buildArg( kst_str ) };
     addCallStatement( FUNCT_STRCAT, 2, args45, true );
+
+    Arg* args47[] = { buildArg(var_str) };
+    addCallStatement( FUNCT_STRUPPER, 1, args47, true );
 
     Arg* args5[] = { buildArg(var_str) };
     addCallStatement( FUNCT_DISP, 1, args5, true );
