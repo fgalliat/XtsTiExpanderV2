@@ -262,6 +262,11 @@ Register* getReg(int num) {
     return NULL;
 }
 
+int getRegNum(Register* r) {
+    if ( r == A ) { return 1; }
+    return 2;
+}
+
 // ============================================
 
 enum argType : uint8_t { AT_NONE=0x00, AT_VAR, AT_REG, AT_KST };
@@ -293,7 +298,7 @@ Arg* buildArg(Register* reg) {
   Arg* arg = new Arg();
   arg->type = AT_REG;
   arg->data = makeMemSeg(1);
-  arg->data[0] = (reg == A ? 1:2); // FIXME Reg index
+  arg->data[0] = getRegNum(reg);
   return arg;
 }
 
@@ -599,6 +604,15 @@ addr addJumpWhenAisTrue(addr codeAddr) {
     return start;
 }
 
+addr addSetDataStatement(addr varAddr, Register* reg) {
+    addr start = curCodePosition;
+    mem[ curCodePosition++ ] = INSTR_SETDATA;
+    mem[ curCodePosition++ ] = varAddr >> 8;
+    mem[ curCodePosition++ ] = varAddr % 256;
+    mem[ curCodePosition++ ] = getRegNum( reg );
+    return start;
+}
+
 // ============================================
 
 void run() {
@@ -646,7 +660,12 @@ void run() {
             // --- clean ...
             free(arg1);
             free(arg2);
-        }
+        } else if ( mem[curAddr] == INSTR_SETDATA ) { // set a data from a reg
+            curAddr++;
+            addr varAddr = (mem[curAddr++] << 8) + mem[curAddr++];
+            Register* reg = getReg(mem[curAddr++]);
+            setDataValue( varAddr, getRegValue( reg ) );
+        } 
     }
 }
 
@@ -722,9 +741,13 @@ int main(int argc, char** argv) {
 
     addCalcStatement( buildArg(var_i), OPCALC_PLUS, buildArg((float)2.0) );
     // Set i, A
+    addSetDataStatement( var_i, A );
 
     Arg* args6[] = { buildArg(A) };
     addCallStatement( FUNCT_DISP, 1, args6, true );
+
+    Arg* args7[] = { buildArg(var_i) };
+    addCallStatement( FUNCT_DISP, 1, args7, true );
 
     disp(" = Code Space =");
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
