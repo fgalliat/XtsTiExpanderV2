@@ -174,11 +174,24 @@ bool setDataValue(addr varAddr, const char* value) {
   return true;   
 }
 
+addr addDataStringConstant(const char* str) {
+    addr place = addData(T_STRING, 1, strlen(str));
+    setDataValue(place, str);
+    return place;
+}
+
 float getFloatDataValue(addr varAddr) {
   varAddr++; // type -- FIXME check type ?
   varAddr++; // lenM
   varAddr++; // lenL
   return getFloatFromBytes(mem, varAddr);
+}
+
+char* getStringDataValue(addr varAddr) {
+  varAddr++; // type -- FIXME check type ?
+  varAddr++; // lenM
+  varAddr++; // lenL
+  return (char*)&mem[varAddr];
 }
 
 uint8_t getByteDataValue(addr varAddr) {
@@ -206,7 +219,8 @@ float getNumDataValue(addr dataAddr) {
 // start of User Funct // less are System Funct
 addr userFuncSpaceStart = 1024; // FIXME
 
-const addr FUNCT_DISP = 0x0001;
+const addr FUNCT_DISP   = 0x0001;
+const addr FUNCT_STRCAT = 0x0002;
 
 // ============================================
 
@@ -371,6 +385,29 @@ void doDisp(int argc, Arg** args) {
     printf("\n");
 }
 
+void doStrCat(int argc, Arg** args) {
+    if ( argc < 2 ) { return; }
+    if ( args[0]->type != AT_VAR ) { return; }
+    addr varDest = (args[0]->data[0] << 8) + args[0]->data[1];
+    if ( mem[varDest] != T_STRING ) { return; }
+
+    // FIXME : beware of overflow
+
+    char* str = getStringDataValue( varDest );
+    for(int i=1; i < argc; i++) {
+        if ( args[i]->type == AT_VAR ) {
+            addr srcAddr = (args[i]->data[0] << 8) + args[i]->data[1];
+            if ( mem[srcAddr] != T_STRING ) {
+                sprintf( str, "%s%g", str, getNumDataValue(srcAddr) );
+            } else {
+                sprintf( str, "%s%s", str, getStringDataValue(srcAddr) );
+            }
+        } else {
+            sprintf( str, "%s%g", str, getNumValue(args[i]) );
+        }
+    }
+}
+
 // **************************
 
 bool call(addr funct, int argc, Arg** args) {
@@ -378,6 +415,8 @@ bool call(addr funct, int argc, Arg** args) {
         // System Funct
         if ( funct == FUNCT_DISP ) {
             doDisp( argc, args );
+        } else if ( funct == FUNCT_STRCAT ) {
+            doStrCat( argc, args );
         }
     } else {
         // User Funct
@@ -547,6 +586,8 @@ int main(int argc, char** argv) {
     addr var_str = addData(T_STRING, 1, 25);
     addr var_b = addData(T_BYTE);
 
+    addr kst_str = addDataStringConstant("ABC");
+
     setDataValue(var_i, (float)3.14);
     setDataValue(var_str, "Hello world");
     setDataValue(var_b, (uint8_t)0xFE);
@@ -595,6 +636,12 @@ int main(int argc, char** argv) {
 
     Arg* args4[] = { buildArg(var_b), buildArg( A ) };
     addCallStatement( FUNCT_DISP, 2, args4, true );
+
+    Arg* args45[] = { buildArg(var_str), buildArg( kst_str ) };
+    addCallStatement( FUNCT_STRCAT, 2, args45, true );
+
+    Arg* args5[] = { buildArg(var_str) };
+    addCallStatement( FUNCT_DISP, 1, args5, true );
 
     disp(" = Code Space =");
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
