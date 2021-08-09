@@ -64,6 +64,26 @@ typedef uint16_t addr;
 #define BYTE_SIZE 1
 
 // ============================================
+
+void dump(addr start=0, addr stop=MEM_SIZE) {
+  int cpt = 0;
+  for(addr i=start; i < stop; i++) {
+      uint8_t c = mem[i];
+      char d = (c >=32 && c < 128) ? (char)c : '?';
+      printf("%.2X%c ", c, d);
+      cpt++;
+      if ( cpt == 8 ) {
+          printf(" ");
+      }
+      if ( cpt == 16 ) {
+          cpt = 0;
+          printf("\n");
+      }
+  }
+  if ( cpt != 0 ) { printf("\n"); }
+}
+
+// ============================================
 // T_BYTE -> allow : byte, char & bool
 enum dataType : uint8_t { T_NONE=0x00, T_FLOAT, T_STRING, T_BYTE };
 
@@ -128,12 +148,39 @@ bool addData(dataType type, int lenM=1, int lenL=-1) {
   return true;
 }
 
-bool setDataValue(int varNum, float value) {
-  addr varAddr = getDataAddr( varNum );
+bool setDataValue(addr varAddr, float value) {
   varAddr++; // type -- FIXME check type ?
   varAddr++; // lenM
   varAddr++; // lenL
   copyFloatToBytes(mem, varAddr, value);
+  return true;   
+}
+
+bool setDataValue(addr varAddr, uint8_t bte) {
+  varAddr++; // type
+  varAddr++; // lenM
+  varAddr++; // lenL -- FIXME check size Vs value size
+  mem[varAddr] = bte;
+  return true;   
+}
+
+float getFloatDataValue(addr varAddr) {
+  varAddr++; // type -- FIXME check type ?
+  varAddr++; // lenM
+  varAddr++; // lenL
+  return getFloatFromBytes(mem, varAddr);
+}
+
+uint8_t getByteDataValue(addr varAddr) {
+  varAddr++; // type -- FIXME check type ?
+  varAddr++; // lenM
+  varAddr++; // lenL
+  return mem[varAddr++];
+}
+
+bool setDataValue(int varNum, float value) {
+  addr varAddr = getDataAddr( varNum );
+  setDataValue(varAddr, value);
   return true;   
 }
 
@@ -149,11 +196,7 @@ bool setDataValue(int varNum, const char* value) {
 
 bool setDataValue(int varNum, uint8_t bte) {
   addr varAddr = getDataAddr( varNum );
-  varAddr++; // type
-  varAddr++; // lenM
-  varAddr++; // lenL -- FIXME check size Vs value size
-  mem[varAddr] = bte;
-  return true;   
+  return setDataValue(varAddr, bte);   
 }
 
 // ============================================
@@ -313,7 +356,8 @@ void doDisp(int argc, Arg** args) {
     printf("\n");
 }
 
-// bundle args
+// **************************
+
 bool call(addr funct, int argc, Arg** args) {
     if ( funct < userFuncSpaceStart ) {
         // System Funct
@@ -327,24 +371,19 @@ bool call(addr funct, int argc, Arg** args) {
     return true;
 }
 
-// ============================================
-
-void dump(addr start=0, addr stop=MEM_SIZE) {
-  int cpt = 0;
-  for(addr i=start; i < stop; i++) {
-      uint8_t c = mem[i];
-      char d = (c >=32 && c < 128) ? (char)c : '?';
-      printf("%.2X%c ", c, d);
-      cpt++;
-      if ( cpt == 8 ) {
-          printf(" ");
-      }
-      if ( cpt == 16 ) {
-          cpt = 0;
-          printf("\n");
-      }
+bool incData(addr dataAddr, float delta) {
+  dataType dt = (dataType)mem[dataAddr];
+  if ( dt == T_STRING || dt == T_NONE ) { return false; }
+  if ( dt == T_FLOAT ) {
+    float v = getFloatDataValue(dataAddr);
+    v += delta;
+    setDataValue(dataAddr, v);
+  } else if ( dt == T_BYTE ) {
+      uint8_t v = getByteDataValue(dataAddr);
+      v += (int)delta;
+      setDataValue(dataAddr, v);
   }
-  if ( cpt != 0 ) { printf("\n"); }
+  return true;
 }
 
 // ============================================
@@ -356,7 +395,8 @@ enum instr : uint8_t {
     INSTR_NOOP=0x00, 
     INSTR_CALL, 
     INSTR_SETREG,
-    INSTR_SETDATA };
+    INSTR_SETDATA,
+    INSTR_INCDATA };
 
 void addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) {
     mem[ curCodePosition++ ] = INSTR_CALL;
@@ -369,21 +409,40 @@ void addCallStatement(addr functionAddr, int argc, Arg** argv, bool autoDelete) 
     }
 }
 
+void addIncDataStatement(addr dataAddr, float delta) {
+    mem[ curCodePosition++ ] = INSTR_INCDATA;
+    mem[ curCodePosition++ ] = dataAddr >> 8;
+    mem[ curCodePosition++ ] = dataAddr % 256;
+    copyFloatToBytes(mem, curCodePosition, delta);
+    curCodePosition += FLOAT_SIZE;
+}
 
 // ============================================
 
 void run() {
     addr curAddr = userCodeSpaceStart;
 
-    if ( mem[curAddr] == INSTR_NOOP ) {
-        return;
-    } else if ( mem[curAddr] == INSTR_CALL ) {
-        curAddr++;
-        addr fct = (mem[curAddr++] << 8) + mem[curAddr++];
-        int argc = mem[curAddr++];
-        Arg** args = readArgsFromMem(argc, curAddr);
-        call(fct, argc, args);
-        free(args);
+    while(true) {
+        if ( mem[curAddr] == INSTR_NOOP ) {
+            return;
+        } else if ( mem[curAddr] == INSTR_CALL ) {
+            curAddr++;
+            addr fct = (mem[curAddr++] << 8) + mem[curAddr++];
+            int argc = mem[curAddr++];
+            Arg** args = readArgsFromMem(argc, curAddr);
+            call(fct, argc, args);
+            // --- clean ...
+            for(int i=0; i < argc; i++) { free(args[i]); }
+            free(args);
+            // curAddr++;
+        } else if ( mem[curAddr] == INSTR_INCDATA ) {
+            curAddr++;
+            addr dataAddr = (mem[curAddr++] << 8) + mem[curAddr++];
+            float delta = getFloatFromBytes(mem, curAddr);
+            curAddr += FLOAT_SIZE;
+            incData(dataAddr, delta);
+            // curAddr++;
+        }
     }
 }
 
@@ -418,6 +477,16 @@ int main(int argc, char** argv) {
     addCallStatement( FUNCT_DISP, 4, args, true );
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
 
+    // 
+    br();
+    addIncDataStatement( getDataAddr(0), 12.7 );
+    addIncDataStatement( getDataAddr(2), -128 );
+
+    Arg* args2[] = { buildArg( getDataAddr(0)), 
+                    buildArg( getDataAddr(2)) };
+    addCallStatement( FUNCT_DISP, 2, args2, true );
+
+    dump(userCodeSpaceStart, userCodeSpaceStart+64);
     run();
 
     return 0;
