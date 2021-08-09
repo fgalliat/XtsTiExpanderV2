@@ -658,8 +658,8 @@ int main(int argc, char** argv) {
     Arg* args4[] = { buildArg(var_b), buildArg( A ) };
     addCallStatement( FUNCT_DISP, 2, args4, true );
 
-    Arg* args45[] = { buildArg(var_str), buildArg( kst_str ) };
-    addCallStatement( FUNCT_STRCAT, 2, args45, true );
+    Arg* args45[] = { buildArg(var_str), buildArg( kst_str ), buildArg( (float)666 ) };
+    addCallStatement( FUNCT_STRCAT, 3, args45, true );
 
     Arg* args47[] = { buildArg(var_str) };
     addCallStatement( FUNCT_STRUPPER, 1, args47, true );
