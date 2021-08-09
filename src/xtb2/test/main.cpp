@@ -507,6 +507,25 @@ bool compare(Arg* arg1, opComp op, Arg* arg2) {
     return true;
 }
 
+bool doCompute(Arg* arg1, opCalc op, Arg* arg2) {
+    float result = 0.0;
+    float value1 = getNumValue( arg1 );
+    float value2 = getNumValue( arg2 );
+
+    if ( op == OPCALC_PLUS ) {
+        result = value1+value2;
+    } else if ( op == OPCALC_MINUS ) {
+        result = value1-value2;
+    } else if ( op == OPCALC_MUL ) {
+        result = value1*value2;
+    } else if ( op == OPCALC_DIV ) {
+        result = value1/value2;
+    }
+
+    setRegValue(A, result );
+    return true;
+}
+
 // ============================================
 
 addr userCodeSpaceStart = 2048; // FIXME
@@ -559,6 +578,19 @@ addr addTestDataStatement(Arg* argComp1, opComp oper, Arg* argComp2, bool autoDe
     return start;
 }
 
+addr addCalcStatement(Arg* argCalc1, opCalc oper, Arg* argCalc2, bool autoDelete=true) {
+    addr start = curCodePosition;
+    mem[ curCodePosition++ ] = INSTR_COMP;
+    writeArgToMem( curCodePosition, argCalc1 );
+    mem[ curCodePosition++ ] = oper;
+    writeArgToMem( curCodePosition, argCalc2 );
+    if ( autoDelete ) {
+        free(argCalc1);
+        free(argCalc2);
+    }
+    return start;
+}
+
 addr addJumpWhenAisTrue(addr codeAddr) {
     addr start = curCodePosition;
     mem[ curCodePosition++ ] = INSTR_JMPAT;
@@ -605,6 +637,15 @@ void run() {
             if ( getRegValue( A ) >= 1.0 ) {
                 curAddr = jump; // do jump
             }
+        } else if ( mem[curAddr] == INSTR_COMP ) {
+            curAddr++;
+            Arg* arg1 = readArgFromMem(curAddr);
+            opCalc oper = (opCalc)mem[curAddr++];
+            Arg* arg2 = readArgFromMem(curAddr);
+            doCompute(arg1, oper, arg2); // feeds register A
+            // --- clean ...
+            free(arg1);
+            free(arg2);
         }
     }
 }
@@ -678,6 +719,12 @@ int main(int argc, char** argv) {
 
     Arg* args5[] = { buildArg(var_str) };
     addCallStatement( FUNCT_DISP, 1, args5, true );
+
+    addCalcStatement( buildArg(var_i), OPCALC_PLUS, buildArg((float)2.0) );
+    // Set i, A
+
+    Arg* args6[] = { buildArg(A) };
+    addCallStatement( FUNCT_DISP, 1, args6, true );
 
     disp(" = Code Space =");
     dump(userCodeSpaceStart, userCodeSpaceStart+64);
