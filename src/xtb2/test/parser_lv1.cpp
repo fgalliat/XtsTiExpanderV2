@@ -40,6 +40,38 @@ int indexOf(char* str, char ch, int start=0) {
 return -1;
 }
 
+int indexOf(char* str, char* toFind, int start=0) {
+    // printf("%s -- %s\n", str, toFind);
+    int idx = indexOf(str, toFind[0], start);
+    if ( idx < 0 ) { return idx; }
+    int tlen = strlen(toFind);
+    if (tlen > 0) {
+        int ii = 0;
+        while( true ) {
+            idx = indexOf(str, toFind[0], start);
+            int id2 = idx;
+            int i;
+            for(i=1; tlen; i++) {
+                id2 = indexOf(str, toFind[i], id2 );
+                // printf("? '%c' %d -> %d (%d) [%d]\n", toFind[i], idx, id2, i, start);
+                if ( id2 != idx+i ) {
+                    ii=0;
+                    start++;
+                    break;
+                } else {
+                    ii=1;
+                }
+            }
+            if ( start >= strlen( str ) ) {
+                return -1;
+            } else if (i == tlen) {
+                return idx;
+            }
+        }
+    }
+    return idx;
+}
+
 // always free-able
 char* makeString(int len) {
     char* p = (char*)malloc(len+1);
@@ -69,6 +101,49 @@ char* substring(char* str, int start, int stop) {
     return res;
 }
 
+char* str_split(char* stringToSplit, char delim, int tokenNum) {
+    if ( tokenNum < 0 ) {
+        return makeString(0);
+    }
+
+    int curToken = 0;
+    int idx = 0, lastIdx = 0;
+
+    while( true ) {
+        lastIdx = idx;
+        idx = indexOf(stringToSplit, delim, idx);
+        if ( idx < 0 ) {
+            // return NULL;
+            // THERE WAS A BUG HERE !!!
+            return substring(stringToSplit, lastIdx, strlen( stringToSplit ) );
+        }
+        if ( curToken == tokenNum ) {
+            return substring(stringToSplit, lastIdx, idx);
+        }
+        idx++; // += delim.length
+        curToken++;
+    }
+
+    return NULL;
+}
+
+int str_count(char* stringToSplit, char delim) {
+    int curToken = 0;
+    int idx = 0;//, lastIdx = 0;
+
+    while( true ) {
+        // lastIdx = idx;
+        idx = indexOf(stringToSplit, delim, idx);
+        if ( idx < 0 ) {
+            break;
+        }
+        idx++; // += delim.length
+        curToken++;
+    }
+
+    return curToken;
+}
+
 // modify str
 char* trim(char* str) {
   if ( str == NULL || strlen(str) < 1 ) { return str; }
@@ -88,10 +163,14 @@ char* trim(char* str) {
       }
   }
 
+
   if ( left > 0 || right < tlen-1 ) {
-    //   if (right < tlen-1) str[right] = 0x00; // before going to left
-      if (left > 0      ) memmove(&str[0], &str[left], tlen-left);
-      str[right] = 0x00;
+      int newLen = (right-left)+1;
+      char tmp[newLen+1]; memset(tmp, 0x00, newLen+1);
+
+      memcpy(tmp, &str[left], newLen);
+      memset( str, 0x00, tlen );
+      memcpy(&str[0], tmp, newLen);
   }
 
   return str;
@@ -104,19 +183,24 @@ addr varsAddrs[99];
 int varMax = 0;
 
 void addNewVar(dataType type, char* name, int len=-1) {
-    printf("Add var : (%s)\n", name);
-  varsNames[varMax] = name;
+    printf(" Add var : (%s)\n", name);
+  // varsNames[varMax] = name;
+  varsNames[varMax] = (char*)malloc( strlen(name)+1 );
+  sprintf(varsNames[varMax], name, strlen(name));
   varsAddrs[varMax] = addData(type, 1, len);
   varMax++;
 }
 
 int findVar(char* name) {
+    printf(" Var find [%s]\n", name);
+    int tlen = strlen(name);
     for(int i=0; i < varMax; i++) {
-        int tlen = strlen(name);
         if ( strlen(varsNames[i]) == tlen && strncmp(varsNames[i], name, tlen) == 0 ) {
+            printf(" Var found [%s]\n", name);
             return i;
         }
     }
+    printf(" Var Not found !!!! [%s]\n", name);
     return -1;
 }
 
@@ -126,7 +210,9 @@ int lblMax = 0;
 
 void addLabel(char* name) {
     printf("Add lbl : (%s)\n", name);
-  lblsNames[lblMax] = name;
+//   lblsNames[lblMax] = name;
+lblsNames[varMax] = (char*)malloc( strlen(name)+1 );
+  sprintf(lblsNames[varMax], name, strlen(name));
   lblsAddrs[lblMax] = curCodePosition; // from xcomp.h
   lblMax++;
 }
@@ -138,12 +224,73 @@ int findLabel(char* name) {
             return i;
         }
     }
+    printf("Label Not found !!!! [%s]\n", name);
     return -1;
+}
+
+Arg* readArgFromString(char* str) {
+    trim(str);
+    if ( str[0] >= 'a' && str[0] <= 'z' ) {
+        return buildArg( varsAddrs[ findVar(str) ] );
+    } else if ( str[0] == '"' ) {
+        int tlen = (strlen(str)-2);
+        char str2[tlen+1]; memset(str2, 0x00, tlen+1);
+        memcpy(str2, &str[1], tlen);
+        addr data = addDataStringConstant( str2 );
+        return buildArg( data );
+    } else if ( strlen(str) > 2 && str[0] == '0' && str[1] == 'x' ) {
+        // FIXME
+        disp("FIXME 0x01");
+        float f = 255.0;
+        return buildArg( f );
+    } else {
+        float f = atof(str);
+        return buildArg( f );
+    }
+    return NULL;
+}
+
+Arg** readArgsFromString(char* str, int &nbArgs) {
+  int nbMaxArgs = str_count(str, ' ');
+  if ( nbMaxArgs == 0 ) { nbMaxArgs = 1; }
+  Arg** coll = (Arg**)malloc( nbMaxArgs * sizeof( Arg* ) );
+
+  int cpt = 0;
+  for(int i=0; i < nbMaxArgs; i++) {
+      char* tk = str_split(str, ' ', i);
+      if ( strlen(tk) == 0 || tk[0] == ' ' ) {
+          continue;
+      }
+      if ( tk[0] == '"' ) {
+          char str2[128+1];
+          sprintf( str2, "%s", tk );
+          while ( tk[strlen(tk)-1] != '"' ) {
+              i++;
+              tk = str_split(str, ' ', i);
+              sprintf( str2, "%s %s", str2, tk );
+          }
+        //   disp(">>>>");
+        //   disp(str2);
+        //   disp(">>>>");
+          addr ad = addDataStringConstant(str2);
+          coll[cpt++] = buildArg( ad );
+      } else if ( tk[0] >= 'a' && tk[0] <= 'z' ) {
+          addr ad = varsAddrs[ findVar(tk) ];
+          coll[cpt++] = buildArg( ad );
+      } else if ( tk[0] >= '0' && tk[0] <= '9' || tk[0] == '-' || tk[0] == '.' ) {
+          float v = atof(tk);
+          coll[cpt++] = buildArg( v );
+      }
+      // free(tk);
+  }
+  nbArgs = cpt;
+
+  return coll;
 }
 
 // ========================
 
-void handleLine(char* line) {
+void handleLine(char* line, bool prevIsIfTrue=false) {
     int tlen = strlen(line);
     if ( tlen == 0 ) { return; }
 
@@ -156,6 +303,8 @@ void handleLine(char* line) {
     line = &line[startOfLine];
     tlen = strlen(line);
     if ( tlen == 0 ) { return; }
+
+printf("> %s\n", line);
 
     if ( startsWith(line, "//") ) {
         return;
@@ -188,7 +337,7 @@ void handleLine(char* line) {
         int dMax = indexOf(descr, ']')+1;
         char* dStr = trim( substring( descr, 0, dMax ) );
         int ln = atoi(dStr);
-        printf("DLen is %d \n", ln);
+        // printf("DLen is %d \n", ln);
         descr = &descr[dMax];
 
         int len = strlen(descr);
@@ -203,36 +352,95 @@ void handleLine(char* line) {
     }
     // condition
     else if ( startsWith(line, "if ") ) {
-        if ( contains(line, "==") ) {
-            
-        } else if ( contains(line, "!=") ) {
-            
-        } else if ( contains(line, ">=") ) {
-            
-        } else if ( contains(line, "<=") ) {
-            
-        } else if ( contains(line, ">") ) {
-            
-        } else if ( contains(line, "<") ) {
-            
+        int idd = indexOf(line, (char*)" then");
+        if ( idd < 0 ) {
+            disp("Wrong if statement");
+            disp(line);
+            return;
         }
-    }
-    // assignation
-    else if ( contains(line, "=") ) { // FIXME : contained in str ..
+        char* cond = substring(line, 3, idd);
+        trim(cond);
+        // FIXME : clean
+
+        char* then = &line[ idd + 5 ];
+
+        disp("cond:"); disp(cond);
+        disp("then:"); disp(then);
+
+        if ( contains(line, "==") ) {
+            int idx = indexOf(cond, (char*)"==");
+            Arg* arg0 = readArgFromString( substring( cond, 0, idx ) );
+            Arg* arg1 = readArgFromString( substring( cond, idx+2, strlen(cond) ) );
+            addTestDataStatement( arg0, OPCOMP_EQ, arg1 );
+        } else if ( contains(line, "!=") ) {
+            int idx = indexOf(cond, (char*)"!=");
+            Arg* arg0 = readArgFromString( substring( cond, 0, idx ) );
+            Arg* arg1 = readArgFromString( substring( cond, idx+2, strlen(cond) ) );
+            addTestDataStatement( arg0, OPCOMP_NEQ, arg1 );
+        } else if ( contains(line, ">=") ) {
+            int idx = indexOf(cond, (char*)">=");
+            Arg* arg0 = readArgFromString( substring( cond, 0, idx ) );
+            Arg* arg1 = readArgFromString( substring( cond, idx+2, strlen(cond) ) );
+            addTestDataStatement( arg0, OPCOMP_GTE, arg1 );
+        } else if ( contains(line, "<=") ) {
+            int idx = indexOf(cond, (char*)"<=");
+            Arg* arg0 = readArgFromString( substring( cond, 0, idx ) );
+            Arg* arg1 = readArgFromString( substring( cond, idx+2, strlen(cond) ) );
+            addTestDataStatement( arg0, OPCOMP_LTE, arg1 );
+        } else if ( contains(line, ">") ) {
+            int idx = indexOf(cond, (char*)">");
+            Arg* arg0 = readArgFromString( substring( cond, 0, idx ) );
+            Arg* arg1 = readArgFromString( substring( cond, idx+2, strlen(cond) ) );
+            addTestDataStatement( arg0, OPCOMP_GT, arg1 );
+        } else if ( contains(line, "<") ) {
+            int idx = indexOf(cond, (char*)"<");
+            Arg* arg0 = readArgFromString( substring( cond, 0, idx ) );
+            Arg* arg1 = readArgFromString( substring( cond, idx+2, strlen(cond) ) );
+            addTestDataStatement( arg0, OPCOMP_LT, arg1 );
+        } else {
+            disp("Wrong if statement");
+            disp(line);
+            return;
+        }
+
+        handleLine(then, true);
+
     }
     else if ( startsWith(line, "inc ") ) {
+        char* varName = &line[4];
+        trim(varName);
+        // FIXME check if extra arg
+        addIncDataStatement( varsAddrs[findVar(varName)], 1.0 );
     }
     // calls
     else if ( startsWith(line, "disp ") ) {
+        int nbArgs = 0;
+        // disp("before crash");
+        Arg** args = readArgsFromString(&line[5], nbArgs);
+        // disp("after crash");
+        printf("Found %d args\n", nbArgs);
+        addCallStatement( FUNCT_DISP, nbArgs, args );
     }
     // labels
     else if ( startsWith(line, "lbl ") ) {
         char* lblName = &line[4];
-        addLabel(lblName);
+        addLabel(trim(lblName));
+    }
+    else if ( startsWith(line, "goto ") ) {
+        char* lblName = &line[5];
+        trim(lblName);
+        if ( !prevIsIfTrue ) {
+            printf("NYI gotoAnyWay [%s]\n", lblName);
+            return;
+        }
+        addJumpWhenAisTrue( lblsAddrs[findLabel(lblName)] );
+    }
+    // assignation
+    else if ( contains(line, "=") ) { // FIXME : contained in str ..
     }
 
     else
-    printf("> %s\n", line);
+    printf("(!!) > %s\n", line);
 }
 
 int main(int argc, char** argv) {

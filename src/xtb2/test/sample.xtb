@@ -10,15 +10,16 @@ str = "Hello World"
 bte = 0xA0
 f = 3.141596
 
-tmp = cos 45
-tmp = tmp * rand()
-f = f + tmp
+// tmp = cos 45
+// tmp = tmp * rand()
+// f = f + tmp
 
-disp bte str f
+// disp bte str f
+
+f = 0
 
 lbl loop
- f = 0
  disp f
  inc f
- if f < 5 goto loop
+ if f < 5  then goto loop
 disp "finished"
