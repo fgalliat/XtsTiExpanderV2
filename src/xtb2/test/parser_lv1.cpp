@@ -294,6 +294,7 @@ Arg** readArgsFromString(char* str, int &nbArgs) {
       }
       else if ( tk[0] >= '0' && tk[0] <= '9' || tk[0] == '-' || tk[0] == '.' ) {
           float v = atof(tk);
+printf( "readArgsFromString() -> %g (%s)", v, tk );
           coll[cpt++] = buildArg( v );
       }
       // free(tk);
@@ -482,6 +483,10 @@ printf("> %s\n", line);
         int nbArgs = 0;
         Arg** args = readArgsFromString(expr, nbArgs);
 
+disp("-------->");
+printf( "var@ %d \n", varAddr );
+doDisp(args[0]);
+disp("-------->");
         addSetDataStatement( varAddr, args[0] );
     }
 

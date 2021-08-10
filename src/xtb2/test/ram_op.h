@@ -1,12 +1,27 @@
 bool setDataValue(addr varAddr, float value) {
+  addr start = varAddr;
+  printf("vm: setDataValue(@%d, %g)\n", varAddr, value);
+
+  dataType type = (dataType)mem[varAddr];
+
   varAddr++; // type -- FIXME check type ?
   varAddr++; // lenM
   varAddr++; // lenL
-  copyFloatToBytes(mem, varAddr, value);
+
+  if ( type == T_FLOAT ) {
+    copyFloatToBytes(mem, varAddr, value);
+  } else if ( type == T_BYTE ) {
+    int v = (int)value;
+    mem[ varAddr ] = v % 256;
+  }
+
+  // dump(start, start+8);
+
   return true;   
 }
 
 bool setDataValue(addr varAddr, uint8_t bte) {
+  printf("vm: setDataValue(@%d, %.2X)\n", varAddr, bte);
   varAddr++; // type
   varAddr++; // lenM
   varAddr++; // lenL -- FIXME check size Vs value size
@@ -15,15 +30,19 @@ bool setDataValue(addr varAddr, uint8_t bte) {
 }
 
 bool setDataValue(addr varAddr, const char* value) {
+  printf("vm: setDataValue(@%d, %s)\n", varAddr, value);
   varAddr++; // type
   varAddr++; // lenM
   varAddr++; // lenL -- FIXME check size Vs value size
   int len = strlen( value );
   memcpy(&mem[varAddr], &value[0], len);
+  // if ()
+  // mem[varAddr+len] = 0x00;
   return true;   
 }
 
 bool setDataValue(addr varAddr, addr otherData) {
+  printf("vm: setDataValue(@%d, @%d)\n", varAddr, otherData);
   varAddr++; // type
   varAddr++; // lenM
   varAddr++; // lenL -- FIXME check size Vs value size

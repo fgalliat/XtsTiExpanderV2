@@ -14,11 +14,10 @@ f = 3.141596
 // tmp = tmp * rand()
 // f = f + tmp
 
-// disp bte str f
+disp bte str f
+//disp f
 
-disp f
-
-f = 0
+// f = 0
 
 //lbl loop
 // disp f

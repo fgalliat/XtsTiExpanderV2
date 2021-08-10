@@ -181,7 +181,12 @@ addr addSetDataStatement(addr varAddr, Arg* arg) {
     if ( arg->type == AT_REG ) {
         mem[ curCodePosition++ ] = arg->data[0];
     } else if ( arg->type == AT_KST ) {
-        memcpy(mem, arg->data, FLOAT_SIZE);
+
+        // float v = getFloatFromBytes( arg->data, 0 );
+        // if ( mem[varAddr] == F_BYTE ) {
+        // }
+
+        memcpy(&mem[curCodePosition], arg->data, FLOAT_SIZE);
         curCodePosition += FLOAT_SIZE;
     } else if ( arg->type == AT_VAR ) {
         mem[ curCodePosition++ ] = arg->data[0];
