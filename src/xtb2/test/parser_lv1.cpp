@@ -272,12 +272,13 @@ Arg** readArgsFromString(char* str, int &nbArgs) {
           continue;
       }
       if ( tk[0] == '"' ) {
-          char str2[128+1];
+          char str2[128+1]; memset(str2, 0x00, 128+1);
           sprintf( str2, "%s", tk );
           while ( tk[strlen(tk)-1] != '"' ) {
               i++;
               tk = str_split(str, ' ', i);
-              sprintf( str2, "%s %s", str2, tk );
+              int curLen = strlen(str2);
+              sprintf( &str2[curLen], " %s", tk );
           }
         //   disp(">>>>");
         //   disp(str2);
@@ -294,7 +295,7 @@ Arg** readArgsFromString(char* str, int &nbArgs) {
       }
       else if ( tk[0] >= '0' && tk[0] <= '9' || tk[0] == '-' || tk[0] == '.' ) {
           float v = atof(tk);
-printf( "readArgsFromString() -> %g (%s)", v, tk );
+// printf( "readArgsFromString() -> %g (%s)", v, tk );
           coll[cpt++] = buildArg( v );
       }
       // free(tk);
@@ -483,10 +484,10 @@ printf("> %s\n", line);
         int nbArgs = 0;
         Arg** args = readArgsFromString(expr, nbArgs);
 
-disp("-------->");
-printf( "var@ %d \n", varAddr );
-doDisp(args[0]);
-disp("-------->");
+// disp("-------->");
+// printf( "var@ %d \n", varAddr );
+// doDisp(args[0]);
+// disp("-------->");
         addSetDataStatement( varAddr, args[0] );
     }
 

@@ -12,6 +12,7 @@ void doDisp( Arg* arg ) {
             int lenElem = mem[argAddr+2];
             char str[lenElem+1];
             memcpy(str, &mem[argAddr+3], lenElem);
+            str[lenElem]=0x00;
             printf("%s", str);
             return;
         } else if ( varType == T_BYTE ) {
@@ -227,7 +228,7 @@ void run() {
                 float f = getFloatFromBytes(mem, curAddr);
                 curAddr+=FLOAT_SIZE;
 
-printf("vm: SETDATA float %g\n", f);
+// printf("vm: SETDATA float %g\n", f);
 
                 setDataValue( varAddr, f );
             } else if (type == AT_REG) {

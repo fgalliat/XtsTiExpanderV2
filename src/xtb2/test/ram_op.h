@@ -33,11 +33,11 @@ bool setDataValue(addr varAddr, const char* value) {
   printf("vm: setDataValue(@%d, %s)\n", varAddr, value);
   varAddr++; // type
   varAddr++; // lenM
+  int lenMax = mem[varAddr]; 
   varAddr++; // lenL -- FIXME check size Vs value size
   int len = strlen( value );
-  memcpy(&mem[varAddr], &value[0], len);
-  // if ()
-  // mem[varAddr+len] = 0x00;
+  memcpy(&mem[varAddr], &value[0], min(len, lenMax) );
+  if ( len < lenMax ) { mem[varAddr+len] = 0x00; }
   return true;   
 }
 
