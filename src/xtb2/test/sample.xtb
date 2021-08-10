@@ -15,7 +15,6 @@ f = 3.141596
 // f = f + tmp
 
 disp bte str f
-//disp f
 
 f = 0
 lbl loop
@@ -23,5 +22,3 @@ lbl loop
  inc f
  if f < 5  then goto loop
 disp "finished"
-
-disp "go"

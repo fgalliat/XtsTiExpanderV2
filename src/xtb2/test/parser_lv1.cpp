@@ -183,6 +183,11 @@ char* trim(char* str) {
   return str;
 }
 
+static int hexStrToInt(char* str) {
+    int hexNumber;
+    sscanf(str, "%02X", &hexNumber);
+    return hexNumber;
+}
 
 // ========================
 char* varsNames[99];
@@ -236,28 +241,6 @@ int findLabel(char* name) {
     return -1;
 }
 
-Arg* readArgFromString(char* str) {
-    trim(str);
-    if ( str[0] >= 'a' && str[0] <= 'z' ) {
-        return buildArg( varsAddrs[ findVar(str) ] );
-    } else if ( str[0] == '"' ) {
-        int tlen = (strlen(str)-2);
-        char str2[tlen+1]; memset(str2, 0x00, tlen+1);
-        memcpy(str2, &str[1], tlen);
-        addr data = addDataStringConstant( str2 );
-        return buildArg( data );
-    } else if ( strlen(str) > 2 && str[0] == '0' && str[1] == 'x' ) {
-        // FIXME
-        disp("FIXME 0x01");
-        float f = 255.0;
-        return buildArg( f );
-    } else {
-        float f = atof(str);
-        return buildArg( f );
-    }
-    return NULL;
-}
-
 Arg** readArgsFromString(char* str, int &nbArgs) {
   int nbMaxArgs = str_count(str, ' ');
   //if ( nbMaxArgs == 0 ) { nbMaxArgs = 1; }
@@ -289,9 +272,8 @@ Arg** readArgsFromString(char* str, int &nbArgs) {
           addr ad = varsAddrs[ findVar(tk) ];
           coll[cpt++] = buildArg( ad );
       } else if ( startsWith(tk, "0x") ) {
-          // FIXME
-          float v = 255.0;
-          coll[cpt++] = buildArg( v );
+          float f = (float)hexStrToInt( &str[2] );
+          coll[cpt++] = buildArg( f );
       }
       else if ( tk[0] >= '0' && tk[0] <= '9' || tk[0] == '-' || tk[0] == '.' ) {
           float v = atof(tk);
@@ -303,6 +285,29 @@ Arg** readArgsFromString(char* str, int &nbArgs) {
   nbArgs = cpt;
 
   return coll;
+}
+
+Arg* readArgFromString(char* str) {
+    // trim(str);
+    // if ( str[0] >= 'a' && str[0] <= 'z' ) {
+    //     return buildArg( varsAddrs[ findVar(str) ] );
+    // } else if ( str[0] == '"' ) {
+    //     int tlen = (strlen(str)-2);
+    //     char str2[tlen+1]; memset(str2, 0x00, tlen+1);
+    //     memcpy(str2, &str[1], tlen);
+    //     addr data = addDataStringConstant( str2 );
+    //     return buildArg( data );
+    // } else if ( strlen(str) > 2 && str[0] == '0' && str[1] == 'x' ) {
+    //     float f = (float)hexStrToInt( &str[2] );
+    //     return buildArg( f );
+    // } else {
+    //     float f = atof(str);
+    //     return buildArg( f );
+    // }
+    // return NULL;
+    int nbArgs = 0;
+    Arg** args = readArgsFromString(str, nbArgs);
+    return nbArgs < 1 ? NULL : args[0];
 }
 
 // ========================

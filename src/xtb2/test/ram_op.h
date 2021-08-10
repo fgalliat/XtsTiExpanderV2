@@ -1,6 +1,8 @@
+#define DISP_SETDATA false
+
 bool setDataValue(addr varAddr, float value) {
   addr start = varAddr;
-  printf("vm: setDataValue(@%d, %g)\n", varAddr, value);
+  if (DISP_SETDATA) printf("vm: setDataValue(@%d, %g)\n", varAddr, value);
 
   dataType type = (dataType)mem[varAddr];
 
@@ -21,7 +23,7 @@ bool setDataValue(addr varAddr, float value) {
 }
 
 bool setDataValue(addr varAddr, uint8_t bte) {
-  printf("vm: setDataValue(@%d, %.2X)\n", varAddr, bte);
+  if (DISP_SETDATA) printf("vm: setDataValue(@%d, %.2X)\n", varAddr, bte);
   varAddr++; // type
   varAddr++; // lenM
   varAddr++; // lenL -- FIXME check size Vs value size
@@ -30,7 +32,7 @@ bool setDataValue(addr varAddr, uint8_t bte) {
 }
 
 bool setDataValue(addr varAddr, const char* value) {
-  printf("vm: setDataValue(@%d, %s)\n", varAddr, value);
+  if (DISP_SETDATA) printf("vm: setDataValue(@%d, %s)\n", varAddr, value);
   varAddr++; // type
   varAddr++; // lenM
   int lenMax = mem[varAddr]; 
@@ -42,7 +44,7 @@ bool setDataValue(addr varAddr, const char* value) {
 }
 
 bool setDataValue(addr varAddr, addr otherData) {
-  printf("vm: setDataValue(@%d, @%d)\n", varAddr, otherData);
+  if (DISP_SETDATA) printf("vm: setDataValue(@%d, @%d)\n", varAddr, otherData);
   varAddr++; // type
   varAddr++; // lenM
   varAddr++; // lenL -- FIXME check size Vs value size
