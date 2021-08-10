@@ -2,6 +2,7 @@ void doDisp( Arg* arg ) {
     argType type = arg->type;
     if ( type == AT_VAR ) {
         addr argAddr = (arg->data[0] << 8) + arg->data[1];
+        
         uint8_t varType = mem[argAddr];
         if ( varType == T_FLOAT ) {
             float v = getFloatFromBytes(mem, argAddr+3);
@@ -18,6 +19,8 @@ void doDisp( Arg* arg ) {
             uint8_t bte = mem[argAddr+3];
             printf("0x%s%.2X", (bte < 16 ? " " : ""), bte );
             return;
+        } else {
+            printf("Unknown disp op [%d] VARType [%d] @%d \n", type, varType, argAddr);
         }
     } else if ( type == AT_KST ) {
         float v = getFloatFromBytes( arg->data, 0 );
@@ -28,7 +31,7 @@ void doDisp( Arg* arg ) {
         printf("%g", v);
         return;
     }
-    printf("Unknown disp op \n");
+    printf("Unknown disp op [%d] \n", type);
 }
 
 void doDisp(int argc, Arg** args) {
@@ -215,11 +218,23 @@ void run() {
             // --- clean ...
             free(arg1);
             free(arg2);
-        } else if ( mem[curAddr] == INSTR_SETDATA ) { // set a data from a reg
+        } else if ( mem[curAddr] == INSTR_SETDATA ) { // set a data from an Arg
             curAddr++;
+            argType type = (argType)mem[curAddr++];
             addr varAddr = (mem[curAddr++] << 8) + mem[curAddr++];
-            Register* reg = getReg(mem[curAddr++]);
-            setDataValue( varAddr, getRegValue( reg ) );
-        } 
+
+            if ( type == AT_KST ) {
+                float f = getFloatFromBytes(mem, curAddr);
+                curAddr+=FLOAT_SIZE;
+                setDataValue( varAddr, f );
+            } else if (type == AT_REG) {
+                Register* reg = getReg(mem[curAddr++]);
+                setDataValue( varAddr, getRegValue( reg ) );
+            } else if (type == AT_VAR) {
+                addr data = (mem[curAddr++] << 8) + mem[curAddr++];
+                setDataValue( varAddr, data );
+            }
+            
+        }
     }
 }

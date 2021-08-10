@@ -16,10 +16,12 @@ f = 3.141596
 
 // disp bte str f
 
+disp f
+
 f = 0
 
-lbl loop
- disp f
- inc f
- if f < 5  then goto loop
-disp "finished"
+//lbl loop
+// disp f
+// inc f
+// if f < 5  then goto loop
+//disp "finished"

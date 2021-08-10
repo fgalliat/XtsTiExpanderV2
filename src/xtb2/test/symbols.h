@@ -63,7 +63,7 @@ enum instr : uint8_t {
     INSTR_CALL,      // call a function (store in RegHL if needed)
     INSTR_COMP,      // COMPute then store in RegA
     INSTR_SETREG, 
-    INSTR_SETDATA,   // take RegA then Store to a Variable/Data (ex after COMPute)
+    INSTR_SETDATA,   // take ArgValue then Store to a Variable/Data (ex after COMPute)
     INSTR_INCDATA,   // increment -or- decrement a Data
     INSTR_TEST,      // test a num condition then store into RegA
     INSTR_JMPAT,     // JuMP when reg A is True 

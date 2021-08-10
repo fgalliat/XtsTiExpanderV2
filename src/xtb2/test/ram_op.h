@@ -23,6 +23,16 @@ bool setDataValue(addr varAddr, const char* value) {
   return true;   
 }
 
+bool setDataValue(addr varAddr, addr otherData) {
+  varAddr++; // type
+  varAddr++; // lenM
+  varAddr++; // lenL -- FIXME check size Vs value size
+  int len = mem[otherData+1] * mem[otherData+2];
+  // FIXME check type cast
+  memcpy(&mem[varAddr], &mem[otherData+3], len);
+  return true;   
+}
+
 float getFloatDataValue(addr varAddr) {
   varAddr++; // type -- FIXME check type ?
   varAddr++; // lenM

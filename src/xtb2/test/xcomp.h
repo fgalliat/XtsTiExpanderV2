@@ -163,8 +163,30 @@ addr addJumpWhenAisTrue(addr codeAddr) {
 addr addSetDataStatement(addr varAddr, Register* reg) {
     addr start = curCodePosition;
     mem[ curCodePosition++ ] = INSTR_SETDATA;
+    mem[ curCodePosition++ ] = AT_REG;
     mem[ curCodePosition++ ] = varAddr >> 8;
     mem[ curCodePosition++ ] = varAddr % 256;
     mem[ curCodePosition++ ] = getRegNum( reg );
+    return start;
+}
+
+
+addr addSetDataStatement(addr varAddr, Arg* arg) {
+    addr start = curCodePosition;
+    mem[ curCodePosition++ ] = INSTR_SETDATA;
+    mem[ curCodePosition++ ] = arg->type;
+    mem[ curCodePosition++ ] = varAddr >> 8;
+    mem[ curCodePosition++ ] = varAddr % 256;
+
+    if ( arg->type == AT_REG ) {
+        mem[ curCodePosition++ ] = arg->data[0];
+    } else if ( arg->type == AT_KST ) {
+        memcpy(mem, arg->data, FLOAT_SIZE);
+        curCodePosition += FLOAT_SIZE;
+    } else if ( arg->type == AT_VAR ) {
+        mem[ curCodePosition++ ] = arg->data[0];
+        mem[ curCodePosition++ ] = arg->data[1];
+    }
+    
     return start;
 }

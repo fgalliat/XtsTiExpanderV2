@@ -5,6 +5,13 @@
 
 #include "xcomp.h"
 
+#define INC_VM 1
+#if INC_VM
+ // = VM emulator
+ #include "xvm.h"
+#endif
+
+
 void br() { printf("\n"); }
 void disp(const char* str) { printf("%s\n", str); }
 
@@ -209,10 +216,10 @@ addr lblsAddrs[99];
 int lblMax = 0;
 
 void addLabel(char* name) {
-    printf("Add lbl : (%s)\n", name);
+    printf(" Add lbl : (%s)\n", name);
 //   lblsNames[lblMax] = name;
-lblsNames[varMax] = (char*)malloc( strlen(name)+1 );
-  sprintf(lblsNames[varMax], name, strlen(name));
+lblsNames[lblMax] = (char*)malloc( strlen(name)+1 );
+  sprintf(lblsNames[lblMax], name, strlen(name));
   lblsAddrs[lblMax] = curCodePosition; // from xcomp.h
   lblMax++;
 }
@@ -221,10 +228,11 @@ int findLabel(char* name) {
     for(int i=0; i < lblMax; i++) {
         int tlen = strlen(name);
         if ( strlen(lblsNames[i]) == tlen && strncmp(lblsNames[i], name, tlen) == 0 ) {
+            printf(" Label found [%s]\n", name);
             return i;
         }
     }
-    printf("Label Not found !!!! [%s]\n", name);
+    printf(" Label Not found !!!! [%s]\n", name);
     return -1;
 }
 
@@ -252,7 +260,9 @@ Arg* readArgFromString(char* str) {
 
 Arg** readArgsFromString(char* str, int &nbArgs) {
   int nbMaxArgs = str_count(str, ' ');
-  if ( nbMaxArgs == 0 ) { nbMaxArgs = 1; }
+  //if ( nbMaxArgs == 0 ) { nbMaxArgs = 1; }
+  nbMaxArgs++;
+
   Arg** coll = (Arg**)malloc( nbMaxArgs * sizeof( Arg* ) );
 
   int cpt = 0;
@@ -277,7 +287,12 @@ Arg** readArgsFromString(char* str, int &nbArgs) {
       } else if ( tk[0] >= 'a' && tk[0] <= 'z' ) {
           addr ad = varsAddrs[ findVar(tk) ];
           coll[cpt++] = buildArg( ad );
-      } else if ( tk[0] >= '0' && tk[0] <= '9' || tk[0] == '-' || tk[0] == '.' ) {
+      } else if ( startsWith(tk, "0x") ) {
+          // FIXME
+          float v = 255.0;
+          coll[cpt++] = buildArg( v );
+      }
+      else if ( tk[0] >= '0' && tk[0] <= '9' || tk[0] == '-' || tk[0] == '.' ) {
           float v = atof(tk);
           coll[cpt++] = buildArg( v );
       }
@@ -315,6 +330,8 @@ printf("> %s\n", line);
         int len = strlen(descr);
         if ( contains( descr, "=" ) ) {
             len = indexOf(descr, '=')+1;
+            disp("ASSIGN NYI");
+            return;
         }
 
         char* varName = trim( substring( descr, 0, len ) );
@@ -326,6 +343,8 @@ printf("> %s\n", line);
         int len = strlen(descr);
         if ( contains( descr, "=" ) ) {
             len = indexOf(descr, '=')+1;
+            disp("ASSIGN NYI");
+            return;
         }
 
         char* varName = trim( substring( descr, 0, len ) );
@@ -343,6 +362,8 @@ printf("> %s\n", line);
         int len = strlen(descr);
         if ( contains( descr, "=" ) ) {
             len = indexOf(descr, '=')+1;
+            disp("ASSIGN NYI");
+            return;
         }
 
         char* varName = trim( substring( descr, 0, len ) );
@@ -433,10 +454,35 @@ printf("> %s\n", line);
             printf("NYI gotoAnyWay [%s]\n", lblName);
             return;
         }
+        disp("before jump");
+        disp(lblName);
         addJumpWhenAisTrue( lblsAddrs[findLabel(lblName)] );
+        disp("before jump");
     }
     // assignation
     else if ( contains(line, "=") ) { // FIXME : contained in str ..
+        if ( contains(line,"+") || contains(line,"-") || contains(line,"*")
+              || contains(line,"/") || contains(line,"(") || contains(line,")") ) {
+            disp("CALC NYI");
+            return;
+        }
+
+        int idx = indexOf(line, '=');
+        char* varName = substring(line, 0, idx);
+        trim(varName);
+        char* expr = substring(line, idx+1, strlen(line));
+        trim(expr);
+
+        // disp("+++");
+        // disp((const char*)varName);
+        // disp((const char*)expr);
+        // disp("---");
+
+        addr varAddr = varsAddrs[ findVar( varName ) ];
+        int nbArgs = 0;
+        Arg** args = readArgsFromString(expr, nbArgs);
+
+        addSetDataStatement( varAddr, args[0] );
     }
 
     else
@@ -474,6 +520,15 @@ int main(int argc, char** argv) {
     }
 
     fclose( f );
+
+#if INC_VM
+    disp("=====================");
+    disp(" = Data Space =");
+    dump(userDataSpaceStart, userDataSpaceStart+64);
+    disp(" = Code Space =");
+    dump(userCodeSpaceStart, userCodeSpaceStart+64);
+    run();
+#endif
 
 return 0;
 }
