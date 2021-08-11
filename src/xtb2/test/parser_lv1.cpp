@@ -21,6 +21,12 @@ bool startsWith(char* str1, const char* strToFind) {
     return strncmp(str1, strToFind, tlen) == 0;
 }
 
+bool equals(char* str1, const char* str2) {
+    int tlen = strlen( str2 );
+    if ( strlen(str1) != tlen ) { return false; }
+    return strncmp(str1, str2, tlen) == 0;
+}
+
 bool contains(char* str1, const char* strToFind) {
     int tlen = strlen( strToFind );
     if ( strlen(str1) < tlen ) { return false; }
@@ -269,8 +275,42 @@ Arg** readArgsFromString(char* str, int &nbArgs) {
           addr ad = addDataStringConstant(str2);
           coll[cpt++] = buildArg( ad );
       } else if ( tk[0] >= 'a' && tk[0] <= 'z' ) {
-          addr ad = varsAddrs[ findVar(tk) ];
-          coll[cpt++] = buildArg( ad );
+
+          if ( equals(tk, "rand") ) {
+              addCallStatement( FUNCT_RAND, 0, NULL ); // -> stores in HL
+              coll[cpt++] = buildArg( HL );
+
+          } else if ( equals(tk, "cos") ) {
+              if ( i < nbMaxArgs - 1 ) {
+                char* nextTk = str_split(str, ' ', i+1);
+                Arg* cosArg = NULL;
+                i++;
+                // support only that for now
+                if ( nextTk[0] >= 'a' && nextTk[0] <= 'z' ) {
+                    addr ad = varsAddrs[ findVar(tk) ];          
+                    cosArg = buildArg(ad);
+                } else if ( nextTk[0] >= '0' && nextTk[0] <= '9' || nextTk[0] == '-' || nextTk[0] == '.' ) {
+                    float v = atof(tk);
+                    cosArg = buildArg(v);
+                } 
+
+                if ( cosArg == NULL ) {
+                    disp("Cos() requires a Data or a FloatValue");
+                    return NULL;
+                }
+
+                addCallStatement( FUNCT_COS, 1, buildArgs( cosArg ) ); // -> stores in HL
+                coll[cpt++] = buildArg( HL );
+
+              } else {
+                  disp("Cos() requires an Arg");
+                  return NULL;
+              }
+          } else {
+            addr ad = varsAddrs[ findVar(tk) ];
+            coll[cpt++] = buildArg( ad );
+          }
+
       } else if ( startsWith(tk, "0x") ) {
           float f = (float)hexStrToInt( &str[2] );
           coll[cpt++] = buildArg( f );
@@ -501,6 +541,9 @@ printf("> %s\n", line);
 }
 
 int main(int argc, char** argv) {
+    // C Desktop specific
+    srand(time(NULL));
+
     FILE* f = fopen("sample.xtb", "r");
     fseek(f, 0, SEEK_END);
     long size = ftell(f);

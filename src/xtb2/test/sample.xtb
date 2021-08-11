@@ -16,6 +16,13 @@ f = 3.141596
 
 disp bte str f
 
+tmp = cos 45
+disp tmp
+// tmp = tmp * rand
+tmp = rand
+disp tmp
+
+
 f = 0
 lbl loop
  disp f
